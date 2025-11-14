@@ -196,49 +196,72 @@ export default function AdminSupport() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <div className="p-3 bg-primary/10 rounded-lg">
-          <MessageSquare className="w-8 h-8 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold mb-1">Support</h1>
-          <p className="text-muted-foreground">Manage support tickets and client inquiries</p>
-        </div>
+      {/* Header */}
+      <div className="relative">
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-primary/10 via-transparent to-primary/10 blur-3xl" />
+        <Card className="relative p-6 border-primary/30 bg-gradient-to-br from-black/80 to-primary/10 backdrop-blur-xl overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent" />
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-purple-500/20 rounded-full flex items-center justify-center">
+              <MessageSquare className="w-7 h-7 text-purple-400" />
+            </div>
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
+                Support Tickets
+              </h1>
+              <p className="text-muted-foreground">Manage support tickets and client inquiries</p>
+            </div>
+          </div>
+        </Card>
       </div>
 
       {/* Stats */}
       <div className="grid md:grid-cols-4 gap-6">
-        <Card className="p-4 border-card-border">
-          <p className="text-sm text-muted-foreground mb-1">Open Tickets</p>
-          <p className="text-2xl font-bold">{openTickets.length}</p>
+        <Card className="relative p-6 border-purple-500/30 bg-gradient-to-br from-black/60 to-purple-500/5 backdrop-blur-sm overflow-hidden hover:border-purple-500/50 transition-all">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent opacity-0 hover:opacity-100 transition-opacity" />
+          <div className="relative z-10">
+            <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Open Tickets</div>
+            <div className="text-3xl font-bold text-purple-400">{openTickets.length}</div>
+          </div>
         </Card>
-        <Card className="p-4 border-card-border">
-          <p className="text-sm text-muted-foreground mb-1">Total Tickets</p>
-          <p className="text-2xl font-bold">{tickets.length}</p>
+        <Card className="relative p-6 border-blue-500/30 bg-gradient-to-br from-black/60 to-blue-500/5 backdrop-blur-sm overflow-hidden hover:border-blue-500/50 transition-all">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 hover:opacity-100 transition-opacity" />
+          <div className="relative z-10">
+            <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Total Tickets</div>
+            <div className="text-3xl font-bold text-blue-400">{tickets.length}</div>
+          </div>
         </Card>
-        <Card className="p-4 border-card-border">
-          <p className="text-sm text-muted-foreground mb-1">Resolved</p>
-          <p className="text-2xl font-bold text-green-600">
-            {tickets.filter((t) => t.status === "Resolved").length}
-          </p>
+        <Card className="relative p-6 border-green-500/30 bg-gradient-to-br from-black/60 to-green-500/5 backdrop-blur-sm overflow-hidden hover:border-green-500/50 transition-all">
+          <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-transparent opacity-0 hover:opacity-100 transition-opacity" />
+          <div className="relative z-10">
+            <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Resolved</div>
+            <div className="text-3xl font-bold text-green-400">
+              {tickets.filter((t) => t.status === "Resolved").length}
+            </div>
+          </div>
         </Card>
-        <Card className="p-4 border-card-border">
-          <p className="text-sm text-muted-foreground mb-1">Urgent</p>
-          <p className="text-2xl font-bold text-red-600">
-            {tickets.filter((t) => t.priority === "Urgent").length}
-          </p>
+        <Card className="relative p-6 border-red-500/30 bg-gradient-to-br from-black/60 to-red-500/5 backdrop-blur-sm overflow-hidden hover:border-red-500/50 transition-all">
+          <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 to-transparent opacity-0 hover:opacity-100 transition-opacity" />
+          <div className="relative z-10">
+            <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Urgent</div>
+            <div className="text-3xl font-bold text-red-400">
+              {tickets.filter((t) => t.priority === "Urgent" || t.priority === "High").length}
+            </div>
+          </div>
         </Card>
       </div>
 
       {/* Tickets Table */}
-      <Card className="border-card-border">
-        <div className="p-4 border-b">
-          <h2 className="text-lg font-semibold">All Support Tickets</h2>
+      <Card className="border-primary/30 bg-gradient-to-br from-black/80 to-primary/5 backdrop-blur-xl">
+        <div className="p-6 border-b border-primary/20">
+          <h2 className="text-2xl font-bold text-primary uppercase tracking-wider">All Support Tickets</h2>
+          <p className="text-sm text-muted-foreground mt-1">Click "Reply" to view conversation and respond</p>
         </div>
         {tickets.length > 0 ? (
           <DataTable columns={columns} data={tickets} />
         ) : (
           <div className="p-12 text-center">
+            <MessageSquare className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
             <p className="text-muted-foreground">No support tickets found</p>
           </div>
         )}
@@ -246,65 +269,138 @@ export default function AdminSupport() {
 
       {/* Reply Dialog */}
       <Dialog open={replyDialogOpen} onOpenChange={setReplyDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto bg-black border-primary/30">
           <DialogHeader>
-            <DialogTitle>Reply to Ticket</DialogTitle>
+            <DialogTitle className="text-2xl text-primary">Support Ticket Conversation</DialogTitle>
             <DialogDescription>
-              Send a reply to the client's support ticket
+              View conversation history and send reply to client
             </DialogDescription>
           </DialogHeader>
           {selectedTicket && (
             <div className="space-y-4">
-              <div>
-                <Label>Client</Label>
-                <p className="font-semibold">{getUserName(selectedTicket.userId)}</p>
+              {/* Ticket Info */}
+              <div className="grid md:grid-cols-2 gap-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
+                <div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Client</Label>
+                  <p className="font-semibold text-primary">{getUserName(selectedTicket.userId)}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Status</Label>
+                  <Badge className="ml-0">{selectedTicket.status}</Badge>
+                </div>
+                <div className="md:col-span-2">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Subject</Label>
+                  <p className="font-semibold text-lg">{selectedTicket.subject}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Category</Label>
+                  <p className="font-semibold">{selectedTicket.category || "General"}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Priority</Label>
+                  <Badge>{selectedTicket.priority || "Medium"}</Badge>
+                </div>
               </div>
-              <div>
-                <Label>Subject</Label>
-                <p className="font-semibold">{selectedTicket.subject}</p>
-              </div>
-              <div>
-                <Label>Original Message</Label>
-                <Card className="p-4 bg-muted">
-                  <p className="text-sm">{selectedTicket.message}</p>
+
+              {/* Conversation Thread */}
+              <div className="space-y-3">
+                <Label className="text-sm font-bold text-primary uppercase tracking-wider">Conversation History</Label>
+                
+                {/* Original Message */}
+                <Card className="p-4 bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center">
+                      <span className="text-xs font-bold text-blue-400">U</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-blue-400">{getUserName(selectedTicket.userId)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(selectedTicket.createdAt!).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-sm pl-10 whitespace-pre-wrap">{selectedTicket.message}</p>
                 </Card>
+
+                {/* Replies */}
+                {selectedTicket.replies && selectedTicket.replies.length > 0 && (
+                  <>
+                    {selectedTicket.replies.map((reply: any, index: number) => (
+                      <Card 
+                        key={index}
+                        className={`p-4 ${
+                          reply.isAdminReply 
+                            ? 'bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/30' 
+                            : 'bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/30'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className={`w-8 h-8 ${reply.isAdminReply ? 'bg-green-500/20' : 'bg-blue-500/20'} rounded-full flex items-center justify-center`}>
+                            <span className={`text-xs font-bold ${reply.isAdminReply ? 'text-green-400' : 'text-blue-400'}`}>
+                              {reply.isAdminReply ? 'A' : 'U'}
+                            </span>
+                          </div>
+                          <div>
+                            <p className={`text-sm font-semibold ${reply.isAdminReply ? 'text-green-400' : 'text-blue-400'}`}>
+                              {reply.isAdminReply ? 'Support Team' : getUserName(selectedTicket.userId)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(reply.createdAt).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="text-sm pl-10 whitespace-pre-wrap">{reply.message}</p>
+                      </Card>
+                    ))}
+                  </>
+                )}
               </div>
-              <div>
-                <Label>Your Reply</Label>
+              {/* Reply Section */}
+              <div className="pt-4 border-t border-primary/20">
+                <Label className="text-sm font-bold text-primary uppercase tracking-wider">Send Reply</Label>
                 <Textarea
                   value={replyMessage}
                   onChange={(e) => setReplyMessage(e.target.value)}
-                  placeholder="Type your reply here..."
-                  rows={6}
+                  placeholder="Type your reply to the client..."
+                  rows={4}
+                  className="mt-2 border-primary/30 bg-black/40 focus:border-primary"
                 />
               </div>
-              <div>
-                <Label>Update Status</Label>
-                <div className="flex gap-2 mt-2">
+
+              {/* Actions */}
+              <div className="pt-4 border-t border-primary/20">
+                <Label className="text-sm font-bold text-primary uppercase tracking-wider mb-3 block">Update Status</Label>
+                <div className="flex flex-wrap gap-2">
                   <Button
                     size="sm"
                     variant="outline"
+                    className="border-yellow-500/30 hover:bg-yellow-500/10"
                     onClick={() => updateTicketStatusMutation.mutate({ ticketId: selectedTicket.id, status: "In Progress" })}
+                    disabled={updateTicketStatusMutation.isPending}
                   >
-                    In Progress
+                    ⏳ In Progress
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
+                    className="border-green-500/30 hover:bg-green-500/10"
                     onClick={() => updateTicketStatusMutation.mutate({ ticketId: selectedTicket.id, status: "Resolved" })}
+                    disabled={updateTicketStatusMutation.isPending}
                   >
-                    Resolved
+                    ✓ Resolved
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
+                    className="border-gray-500/30 hover:bg-gray-500/10"
                     onClick={() => updateTicketStatusMutation.mutate({ ticketId: selectedTicket.id, status: "Closed" })}
+                    disabled={updateTicketStatusMutation.isPending}
                   >
-                    Closed
+                    🔒 Closed
                   </Button>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-3 pt-4">
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -312,17 +408,27 @@ export default function AdminSupport() {
                     setSelectedTicket(null);
                     setReplyMessage("");
                   }}
-                  className="flex-1"
+                  className="flex-1 border-primary/30"
+                  disabled={replyToTicketMutation.isPending}
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleReply}
                   disabled={replyToTicketMutation.isPending || !replyMessage.trim()}
-                  className="flex-1"
+                  className="flex-1 neon-gold font-bold"
                 >
-                  <Send className="w-4 h-4 mr-2" />
-                  {replyToTicketMutation.isPending ? "Sending..." : "Send Reply"}
+                  {replyToTicketMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Send Reply
+                    </>
+                  )}
                 </Button>
               </div>
             </div>

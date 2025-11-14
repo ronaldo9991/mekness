@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
-import { Loader2, Wallet } from "lucide-react";
+import { Loader2, Wallet, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { motion } from "framer-motion";
 
 interface AccountsStats {
   liveAccounts: number;
@@ -15,6 +16,7 @@ interface AccountsStats {
 export default function AdminAccounts() {
   const { data: stats, isLoading } = useQuery<AccountsStats>({
     queryKey: ["/api/admin/accounts/stats"],
+    refetchInterval: 30000,
   });
 
   if (isLoading) {
@@ -66,33 +68,48 @@ export default function AdminAccounts() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <div className="p-3 bg-primary/10 rounded-lg">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center gap-4"
+      >
+        <div className="w-1 h-12 bg-primary rounded-full" />
+        <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
           <Wallet className="w-8 h-8 text-primary" />
         </div>
-        <div>
-          <h1 className="text-3xl font-bold mb-1">Accounts</h1>
+        <div className="flex-1">
+          <h1 className="text-3xl font-bold mb-1 text-foreground">Accounts</h1>
           <p className="text-muted-foreground">Overview of all account types</p>
         </div>
-      </div>
+        <ChevronDown className="w-5 h-5 text-muted-foreground" />
+      </motion.div>
 
-      <div className="grid gap-4">
+      {/* Account Types List */}
+      <div className="space-y-3">
         {accountTypes.map((account, index) => (
-          <Card key={index} className="p-6 border-card-border hover:shadow-lg transition-shadow">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <h3 className="text-xl font-semibold text-gray-600 mb-1">
-                  {account.title}
-                </h3>
-                <p className="text-sm text-muted-foreground">{account.description}</p>
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.1 }}
+          >
+            <Card className="p-5 border-primary/20 bg-gradient-to-r from-black/60 to-black/40 hover:border-primary/40 hover:from-black/70 hover:to-black/50 transition-all cursor-pointer">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-foreground mb-1">
+                    {account.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">{account.description}</p>
+                </div>
+                <Badge 
+                  className="bg-teal-500 hover:bg-teal-600 text-white text-xl px-5 py-2 font-bold min-w-[80px] text-center"
+                >
+                  {account.count.toLocaleString()}
+                </Badge>
               </div>
-              <Badge 
-                className={`${account.color} text-white text-2xl px-6 py-3 font-bold hover:${account.color}`}
-              >
-                {account.count.toLocaleString()}
-              </Badge>
-            </div>
-          </Card>
+            </Card>
+          </motion.div>
         ))}
       </div>
     </div>

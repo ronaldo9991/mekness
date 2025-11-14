@@ -20,6 +20,11 @@ import {
   User,
   LogOut,
   TrendingUp,
+  MessageSquare,
+  Download,
+  ArrowRightLeft,
+  ArrowRight,
+  UserPlus,
 } from "lucide-react";
 import Logo from "./Logo";
 import { useLocation } from "wouter";
@@ -31,7 +36,12 @@ const menuItems = [
   { title: "Trading History", icon: History, url: "/dashboard/history" },
   { title: "Deposit", icon: ArrowDownToLine, url: "/dashboard/deposit" },
   { title: "Withdraw", icon: ArrowUpFromLine, url: "/dashboard/withdraw" },
+  { title: "Internal Transfer", icon: ArrowRightLeft, url: "/dashboard/internal-transfer" },
+  { title: "External Transfer", icon: ArrowRight, url: "/dashboard/external-transfer" },
+  { title: "IB Account", icon: UserPlus, url: "/dashboard/ib-account" },
+  { title: "Downloads", icon: Download, url: "/dashboard/downloads" },
   { title: "Documents", icon: FileText, url: "/dashboard/documents" },
+  { title: "Support", icon: MessageSquare, url: "/dashboard/support" },
   { title: "Profile", icon: User, url: "/dashboard/profile" },
 ];
 

@@ -40,6 +40,10 @@ const Withdraw = lazy(() => import("@/pages/dashboard/Withdraw"));
 const TradingHistory = lazy(() => import("@/pages/dashboard/TradingHistory"));
 const Profile = lazy(() => import("@/pages/dashboard/Profile"));
 const Support = lazy(() => import("@/pages/dashboard/Support"));
+const Downloads = lazy(() => import("@/pages/dashboard/Downloads"));
+const InternalTransfer = lazy(() => import("@/pages/dashboard/InternalTransfer"));
+const ExternalTransfer = lazy(() => import("@/pages/dashboard/ExternalTransfer"));
+const IBAccount = lazy(() => import("@/pages/dashboard/IBAccount"));
 
 // Admin Pages
 const AdminLogin = lazy(() => import("@/pages/admin/AdminLogin"));
@@ -106,6 +110,26 @@ function AppRouter() {
       <Route path="/dashboard/support">
         <DashboardLayout>
           <Support />
+        </DashboardLayout>
+      </Route>
+      <Route path="/dashboard/downloads">
+        <DashboardLayout>
+          <Downloads />
+        </DashboardLayout>
+      </Route>
+      <Route path="/dashboard/internal-transfer">
+        <DashboardLayout>
+          <InternalTransfer />
+        </DashboardLayout>
+      </Route>
+      <Route path="/dashboard/external-transfer">
+        <DashboardLayout>
+          <ExternalTransfer />
+        </DashboardLayout>
+      </Route>
+      <Route path="/dashboard/ib-account">
+        <DashboardLayout>
+          <IBAccount />
         </DashboardLayout>
       </Route>
 

@@ -24,6 +24,7 @@ import {
   MessageSquare,
   Archive,
   Settings,
+  Globe,
 } from "lucide-react";
 import Logo from "./Logo";
 import { useLocation } from "wouter";
@@ -59,6 +60,7 @@ export default function AdminSidebar({ admin }: AdminSidebarProps) {
     const baseItems = [
       { title: "Dashboard", icon: Home, url: "/admin/dashboard", badge: null },
       { title: "Clients", icon: Users, url: "/admin/clients", badge: null },
+      { title: "Countries", icon: Globe, url: "/admin/countries", badge: null },
       { title: "Pending Documents", icon: FileText, url: "/admin/documents", badge: stats?.pendingDocuments },
       { title: "Deposits", icon: Download, url: "/admin/deposits", badge: stats?.pendingDeposits },
       { title: "Withdrawals", icon: ArrowUpDown, url: "/admin/withdrawals", badge: stats?.pendingWithdrawals },

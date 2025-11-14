@@ -55,10 +55,10 @@ export default function VerificationRequired({
             <div className="flex items-center justify-center gap-4 mb-4">
               <div className="text-center">
                 <div className="text-4xl font-bold text-primary">
-                  {verifiedCount}/{requiredCount}
+                  {verifiedCount > 0 ? "1" : "0"}/1
                 </div>
                 <div className="text-xs text-muted-foreground uppercase tracking-wide">
-                  Documents Verified
+                  ID Verification
                 </div>
               </div>
             </div>
@@ -71,34 +71,15 @@ export default function VerificationRequired({
                   <AlertCircle className="w-5 h-5 text-yellow-400" />
                 )}
                 <div className="flex-1 text-left">
-                  <div className="font-semibold">ID Proof</div>
+                  <div className="font-semibold">ID Proof (Required)</div>
                   <div className="text-xs text-muted-foreground">
                     Passport, Driver's License, or National ID
                   </div>
                 </div>
                 {verifiedCount >= 1 ? (
-                  <span className="text-xs text-green-400 font-semibold">Verified</span>
+                  <span className="text-xs text-green-400 font-semibold">✓ Verified</span>
                 ) : (
-                  <span className="text-xs text-yellow-400 font-semibold">Required</span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-3 p-3 rounded bg-primary/5">
-                {verifiedCount >= 2 ? (
-                  <CheckCircle2 className="w-5 h-5 text-green-400" />
-                ) : (
-                  <AlertCircle className="w-5 h-5 text-yellow-400" />
-                )}
-                <div className="flex-1 text-left">
-                  <div className="font-semibold">Address Proof</div>
-                  <div className="text-xs text-muted-foreground">
-                    Utility bill or Bank statement (not older than 3 months)
-                  </div>
-                </div>
-                {verifiedCount >= 2 ? (
-                  <span className="text-xs text-green-400 font-semibold">Verified</span>
-                ) : (
-                  <span className="text-xs text-yellow-400 font-semibold">Required</span>
+                  <span className="text-xs text-yellow-400 font-semibold">⚠ Required</span>
                 )}
               </div>
             </div>
@@ -120,13 +101,18 @@ export default function VerificationRequired({
             className="neon-gold text-lg font-bold py-6 px-8"
           >
             <Upload className="w-5 h-5 mr-2" />
-            Upload Documents
+            Upload ID Proof
           </Button>
 
           {/* Info */}
-          <div className="text-xs text-muted-foreground">
-            <Shield className="inline w-4 h-4 mr-1" />
-            Your documents are securely encrypted and reviewed by our compliance team within 24-48 hours.
+          <div className="text-xs text-muted-foreground space-y-2">
+            <div>
+              <Shield className="inline w-4 h-4 mr-1" />
+              Your ID is securely encrypted and reviewed by our compliance team within 24-48 hours.
+            </div>
+            <div className="text-primary/80 font-semibold">
+              ℹ Additional documents (Address Proof, Bank Statement) are optional.
+            </div>
           </div>
         </div>
       </Card>

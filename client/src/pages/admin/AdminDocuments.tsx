@@ -26,6 +26,8 @@ export default function AdminDocuments({ admin }: AdminDocumentsProps) {
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [viewDocDialogOpen, setViewDocDialogOpen] = useState(false);
+  const [viewingDoc, setViewingDoc] = useState<Document | null>(null);
 
   const { data: documents = [], isLoading: loadingDocs } = useQuery<Document[]>({
     queryKey: ["/api/admin/documents"],
@@ -86,6 +88,11 @@ export default function AdminDocuments({ admin }: AdminDocumentsProps) {
   const openRejectDialog = (doc: Document) => {
     setSelectedDoc(doc);
     setDialogOpen(true);
+  };
+
+  const openViewDialog = (doc: Document) => {
+    setViewingDoc(doc);
+    setViewDocDialogOpen(true);
   };
 
   const getUserName = (userId: string) => {
@@ -159,7 +166,7 @@ export default function AdminDocuments({ admin }: AdminDocumentsProps) {
                     <h3 className="font-bold text-foreground mb-1">{doc.type}</h3>
                     <p className="text-sm text-muted-foreground">{getUserName(doc.userId)}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Uploaded: {new Date(doc.createdAt!).toLocaleString()}
+                      Uploaded: {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleString() : 'N/A'}
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -167,7 +174,7 @@ export default function AdminDocuments({ admin }: AdminDocumentsProps) {
                       size="sm"
                       variant="outline"
                       className="flex-1 border-primary/30"
-                      onClick={() => window.open(doc.filePath, "_blank")}
+                      onClick={() => openViewDialog(doc)}
                     >
                       <Eye className="w-4 h-4 mr-1" />
                       View
@@ -227,6 +234,70 @@ export default function AdminDocuments({ admin }: AdminDocumentsProps) {
           </div>
         )}
       </div>
+
+      {/* Document Viewer Dialog */}
+      <Dialog open={viewDocDialogOpen} onOpenChange={setViewDocDialogOpen}>
+        <DialogContent className="bg-black border-primary/30 max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="text-primary">
+              {viewingDoc?.type} - {viewingDoc?.fileName}
+            </DialogTitle>
+            <DialogDescription>
+              Uploaded by {getUserName(viewingDoc?.userId || "")} on {viewingDoc?.uploadedAt ? new Date(viewingDoc.uploadedAt).toLocaleString() : 'N/A'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="relative w-full h-[70vh] bg-black/40 rounded-lg overflow-auto flex items-center justify-center">
+            {viewingDoc?.fileUrl && (
+              <>
+                {viewingDoc.fileUrl.includes('application/pdf') || viewingDoc.fileName.toLowerCase().endsWith('.pdf') ? (
+                  <embed
+                    src={viewingDoc.fileUrl}
+                    type="application/pdf"
+                    className="w-full h-full"
+                  />
+                ) : (
+                  <img
+                    src={viewingDoc.fileUrl}
+                    alt={viewingDoc.fileName}
+                    className="max-w-full max-h-full object-contain"
+                  />
+                )}
+              </>
+            )}
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={() => setViewDocDialogOpen(false)}>
+              Close
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700"
+              onClick={() => {
+                if (viewingDoc) {
+                  handleVerify(viewingDoc);
+                  setViewDocDialogOpen(false);
+                }
+              }}
+              disabled={verifyMutation.isPending}
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Approve
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (viewingDoc) {
+                  openRejectDialog(viewingDoc);
+                  setViewDocDialogOpen(false);
+                }
+              }}
+              disabled={verifyMutation.isPending}
+            >
+              <XCircle className="w-4 h-4 mr-2" />
+              Reject
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Rejection Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

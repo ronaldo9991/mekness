@@ -6,10 +6,21 @@ import Stripe from "stripe";
 import { registerMT5Routes } from "./mt5-routes";
 import { mt5Service } from "./mt5-service";
 
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2024-11-20.acacia",
-});
+// Initialize Stripe (optional for development)
+let stripe: Stripe | null = null;
+try {
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  if (stripeKey && stripeKey.startsWith('sk_')) {
+    stripe = new Stripe(stripeKey, {
+      apiVersion: "2024-11-20.acacia",
+    });
+    console.log("✓ Stripe initialized successfully");
+  } else {
+    console.warn("⚠ Stripe not configured - payment features will be disabled");
+  }
+} catch (error) {
+  console.warn("⚠ Stripe initialization failed:", error);
+}
 
 // Extend express-session types
 declare module "express-session" {
@@ -84,10 +95,14 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Authentication endpoints
   app.post("/api/auth/signup", async (req, res) => {
     try {
-      const { email, password, fullName } = req.body;
+      const { email, password, fullName, phone, country, city, ref } = req.body;
       
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      if (!phone || !country || !city) {
+        return res.status(400).json({ message: "Phone number, country, and city are required" });
       }
 
       // Check if user already exists
@@ -102,12 +117,31 @@ export async function registerRoutes(app: Express): Promise<void> {
       // Create username from email
       const username = email.split("@")[0] + Math.floor(Math.random() * 1000);
 
+      // Generate unique referral ID for the new user
+      const referralId = `REF${Math.random().toString(36).substring(2, 10).toUpperCase()}${Date.now().toString(36).toUpperCase()}`;
+
+      // Find referrer if ref parameter is provided
+      let referrerId = null;
+      if (ref) {
+        const referrer = await storage.getAllUsers().then(users => 
+          users.find(u => u.referralId === ref)
+        );
+        if (referrer) {
+          referrerId = referrer.id;
+        }
+      }
+
       // Create user
       const user = await storage.createUser({
         username,
         password: hashedPassword,
         email,
-        fullName: fullName || "",
+        fullName: fullName || username, // Use username as fallback if fullName not provided
+        phone: phone || null,
+        country: country || null,
+        city: city || null,
+        referralId, // User's own referral ID
+        referredBy: referrerId || null, // ID of the user who referred them
       });
 
       // Set session
@@ -179,6 +213,26 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       const { password: _, ...userWithoutPassword } = user;
       res.json({ user: userWithoutPassword });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Check authentication status (returns user data directly)
+  app.get("/api/auth/check", async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch user" });
     }
@@ -441,6 +495,50 @@ export async function registerRoutes(app: Express): Promise<void> {
                   // Continue even if MT5 sync fails - local balance is updated
                 }
               }
+
+              // Credit commission to IB wallet if user was referred
+              const deposit = await storage.getDeposit(stripePayment.depositId);
+              if (deposit) {
+                const user = await storage.getUser(deposit.userId);
+                if (user && user.referredBy) {
+                  try {
+                    const ibWallets = await storage.getIBCBWallets(user.referredBy);
+                    let ibWallet = ibWallets.find(w => w.walletType === "IB");
+                    
+                    if (!ibWallet) {
+                      ibWallet = await storage.createIBCBWallet({
+                        userId: user.referredBy,
+                        walletType: "IB",
+                        balance: "0",
+                        currency: "USD",
+                        commissionRate: "5.0",
+                        totalCommission: "0",
+                        enabled: true,
+                      });
+                    }
+
+                    const commissionRate = parseFloat(ibWallet.commissionRate || "5.0");
+                    const commission = depositAmount * (commissionRate / 100);
+                    const newBalance = (parseFloat(ibWallet.balance || "0") + commission).toString();
+                    const newTotalCommission = (parseFloat(ibWallet.totalCommission || "0") + commission).toString();
+                    
+                    await storage.updateIBCBWallet(ibWallet.id, {
+                      balance: newBalance,
+                      totalCommission: newTotalCommission,
+                      updatedAt: new Date(),
+                    });
+
+                    await storage.createNotification({
+                      userId: user.referredBy,
+                      title: "Commission Earned",
+                      message: `You earned $${commission.toFixed(2)} commission from ${user.fullName || user.email}'s deposit.`,
+                      type: "success",
+                    });
+                  } catch (error) {
+                    console.error("Failed to credit IB commission:", error);
+                  }
+                }
+              }
             }
           }
         }
@@ -469,7 +567,7 @@ export async function registerRoutes(app: Express): Promise<void> {
               const account = await storage.getTradingAccount(sessionMetadata.tradingAccountId);
               if (account) {
                 const depositAmount = session.amount_total! / 100;
-                const newBalance = (parseFloat(account.balance) + depositAmount).toString();
+                const newBalance = (parseFloat(account.balance || "0") + depositAmount).toString();
                 await storage.updateTradingAccount(sessionMetadata.tradingAccountId, { balance: newBalance });
 
                 // Sync with MT5 if enabled
@@ -484,6 +582,47 @@ export async function registerRoutes(app: Express): Promise<void> {
                   } catch (mt5Error) {
                     console.error("Failed to sync deposit with MT5:", mt5Error);
                     // Continue even if MT5 sync fails - local balance is updated
+                  }
+                }
+
+                // Credit commission to IB wallet if user was referred
+                const user = await storage.getUser(deposit.userId);
+                if (user && user.referredBy) {
+                  try {
+                    const ibWallets = await storage.getIBCBWallets(user.referredBy);
+                    let ibWallet = ibWallets.find(w => w.walletType === "IB");
+                    
+                    if (!ibWallet) {
+                      ibWallet = await storage.createIBCBWallet({
+                        userId: user.referredBy,
+                        walletType: "IB",
+                        balance: "0",
+                        currency: "USD",
+                        commissionRate: "5.0",
+                        totalCommission: "0",
+                        enabled: true,
+                      });
+                    }
+
+                    const commissionRate = parseFloat(ibWallet.commissionRate || "5.0");
+                    const commission = depositAmount * (commissionRate / 100);
+                    const newBalance = (parseFloat(ibWallet.balance || "0") + commission).toString();
+                    const newTotalCommission = (parseFloat(ibWallet.totalCommission || "0") + commission).toString();
+                    
+                    await storage.updateIBCBWallet(ibWallet.id, {
+                      balance: newBalance,
+                      totalCommission: newTotalCommission,
+                      updatedAt: new Date(),
+                    });
+
+                    await storage.createNotification({
+                      userId: user.referredBy,
+                      title: "Commission Earned",
+                      message: `You earned $${commission.toFixed(2)} commission from ${user.fullName || user.email}'s deposit.`,
+                      type: "success",
+                    });
+                  } catch (error) {
+                    console.error("Failed to credit IB commission:", error);
                   }
                 }
               }
@@ -607,7 +746,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
       
       const documents = await storage.getDocuments(userId);
-      const requiredTypes = ["ID Proof", "Address Proof"];
+      const requiredTypes = ["ID Proof"]; // Only ID Proof is required
       
       const verifiedDocs = documents.filter(
         doc => doc.status === "Verified" && requiredTypes.includes(doc.type)
@@ -732,6 +871,284 @@ export async function registerRoutes(app: Express): Promise<void> {
       res.json(userWithoutPassword);
     } catch (error) {
       res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
+  // Fund Transfers - Internal (between user's own accounts)
+  app.get("/api/fund-transfers/internal", async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const allTransfers = await storage.getFundTransfers(userId);
+      // Filter internal transfers (both accounts belong to the same user)
+      const userAccounts = await storage.getTradingAccounts(userId);
+      const accountIds = new Set(userAccounts.map(acc => acc.id));
+      
+      const internalTransfers = allTransfers.filter(transfer => 
+        accountIds.has(transfer.fromAccountId) && accountIds.has(transfer.toAccountId)
+      );
+
+      res.json(internalTransfers);
+    } catch (error) {
+      console.error("Failed to fetch internal transfers:", error);
+      res.status(500).json({ message: "Failed to fetch transfers" });
+    }
+  });
+
+  app.post("/api/fund-transfers/internal", async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { fromAccountId, toAccountId, amount, notes } = req.body;
+
+      if (!fromAccountId || !toAccountId || !amount) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // Verify both accounts belong to the user
+      const userAccounts = await storage.getTradingAccounts(userId);
+      const fromAccount = userAccounts.find(acc => acc.id === fromAccountId);
+      const toAccount = userAccounts.find(acc => acc.id === toAccountId);
+
+      if (!fromAccount || !toAccount) {
+        return res.status(400).json({ message: "Invalid account(s)" });
+      }
+
+      if (fromAccountId === toAccountId) {
+        return res.status(400).json({ message: "Source and destination accounts cannot be the same" });
+      }
+
+      const transferAmount = parseFloat(amount);
+      if (isNaN(transferAmount) || transferAmount <= 0) {
+        return res.status(400).json({ message: "Invalid amount" });
+      }
+
+      const currentBalance = parseFloat(fromAccount.balance);
+      if (currentBalance < transferAmount) {
+        return res.status(400).json({ message: "Insufficient balance" });
+      }
+
+      // Create transfer record
+      const transfer = await storage.createFundTransfer({
+        userId,
+        fromAccountId,
+        toAccountId,
+        amount: transferAmount.toString(),
+        currency: "USD",
+        status: "Completed", // Internal transfers are instant
+        notes: notes || null,
+      });
+
+      // Update balances
+      const newFromBalance = (currentBalance - transferAmount).toString();
+      const newToBalance = (parseFloat(toAccount.balance) + transferAmount).toString();
+
+      await storage.updateTradingAccount(fromAccountId, { balance: newFromBalance });
+      await storage.updateTradingAccount(toAccountId, { balance: newToBalance });
+
+      // Create notification
+      await storage.createNotification({
+        userId,
+        title: "Internal Transfer Completed",
+        message: `Successfully transferred $${transferAmount.toFixed(2)} from ${fromAccount.accountId} to ${toAccount.accountId}.`,
+        type: "success",
+      });
+
+      res.status(201).json(transfer);
+    } catch (error) {
+      console.error("Internal transfer error:", error);
+      res.status(500).json({ message: "Failed to process transfer" });
+    }
+  });
+
+  // IB Account Stats
+  app.get("/api/ib/stats", async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Get or create IB wallet
+      let ibWallet = (await storage.getIBCBWallets(userId)).find(w => w.walletType === "IB");
+      if (!ibWallet) {
+        // Create IB wallet with default 5% commission rate
+        ibWallet = await storage.createIBCBWallet({
+          userId,
+          walletType: "IB",
+          balance: "0",
+          currency: "USD",
+          commissionRate: "5.0", // Default 5% commission
+          totalCommission: "0",
+          enabled: true,
+        });
+      }
+
+      // Find all users who were referred by this user (referredBy === user.id)
+      const allUsers = await storage.getAllUsers();
+      const referrals = allUsers.filter(u => u.referredBy === userId);
+
+      // Calculate referral stats
+      let totalDeposits = 0;
+      let totalCommission = parseFloat(ibWallet.totalCommission || "0");
+      const referralDetails = await Promise.all(
+        referrals.map(async (refUser) => {
+          const deposits = await storage.getDeposits(refUser.id);
+          const completedDeposits = deposits.filter(d => d.status === "Completed" || d.status === "Approved");
+          const userTotalDeposits = completedDeposits.reduce((sum, d) => sum + parseFloat(d.amount), 0);
+          const commission = userTotalDeposits * (parseFloat(ibWallet.commissionRate || "0") / 100);
+          
+          totalDeposits += userTotalDeposits;
+
+          return {
+            id: refUser.id,
+            email: refUser.email,
+            fullName: refUser.fullName || refUser.username,
+            joinedAt: refUser.createdAt || new Date(),
+            totalDeposits: userTotalDeposits.toFixed(2),
+            commissionEarned: commission.toFixed(2),
+            status: completedDeposits.length > 0 ? "Active" as const : "Inactive" as const,
+          };
+        })
+      );
+
+      // Calculate pending commission (from pending deposits)
+      let pendingCommission = 0;
+      for (const refUser of referrals) {
+        const deposits = await storage.getDeposits(refUser.id);
+        const pendingDeposits = deposits.filter(d => d.status === "Pending");
+        const pendingAmount = pendingDeposits.reduce((sum, d) => sum + parseFloat(d.amount), 0);
+        pendingCommission += pendingAmount * (parseFloat(ibWallet.commissionRate || "0") / 100);
+      }
+
+      res.json({
+        totalReferrals: referrals.length,
+        activeReferrals: referralDetails.filter(r => r.status === "Active").length,
+        totalCommission: totalCommission.toFixed(2),
+        pendingCommission: pendingCommission.toFixed(2),
+        wallet: ibWallet,
+        referrals: referralDetails.sort((a, b) => new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime()),
+      });
+    } catch (error) {
+      console.error("Failed to fetch IB stats:", error);
+      res.status(500).json({ message: "Failed to fetch IB statistics" });
+    }
+  });
+
+  // Fund Transfers - External (to another user's account)
+  app.get("/api/fund-transfers/external", async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const allTransfers = await storage.getFundTransfers(userId);
+      // Filter external transfers (toAccountId is not in user's accounts)
+      const userAccounts = await storage.getTradingAccounts(userId);
+      const accountIds = new Set(userAccounts.map(acc => acc.id));
+      
+      const externalTransfers = allTransfers.filter(transfer => 
+        accountIds.has(transfer.fromAccountId) && !accountIds.has(transfer.toAccountId)
+      );
+
+      res.json(externalTransfers);
+    } catch (error) {
+      console.error("Failed to fetch external transfers:", error);
+      res.status(500).json({ message: "Failed to fetch transfers" });
+    }
+  });
+
+  app.post("/api/fund-transfers/external", async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { fromAccountId, toAccountNumber, amount, otpMethod } = req.body;
+
+      if (!fromAccountId || !toAccountNumber || !amount) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // Verify source account belongs to user
+      const userAccounts = await storage.getTradingAccounts(userId);
+      const fromAccount = userAccounts.find(acc => acc.id === fromAccountId);
+
+      if (!fromAccount) {
+        return res.status(400).json({ message: "Invalid source account" });
+      }
+
+      // Find destination account by account number
+      const allAccounts = await storage.getAllTradingAccounts();
+      const toAccount = allAccounts.find(acc => acc.accountId === toAccountNumber);
+
+      if (!toAccount) {
+        return res.status(400).json({ message: "Destination account not found" });
+      }
+
+      if (toAccount.userId === userId) {
+        return res.status(400).json({ message: "Use Internal Transfer for your own accounts" });
+      }
+
+      const transferAmount = parseFloat(amount);
+      if (isNaN(transferAmount) || transferAmount <= 0) {
+        return res.status(400).json({ message: "Invalid amount" });
+      }
+
+      // Calculate fee (2.5%)
+      const fee = transferAmount * 0.025;
+      const totalDeduction = transferAmount + fee;
+
+      const currentBalance = parseFloat(fromAccount.balance);
+      if (currentBalance < totalDeduction) {
+        return res.status(400).json({ message: `Insufficient balance. Need $${totalDeduction.toFixed(2)} (amount + 2.5% fee)` });
+      }
+
+      // Create transfer record (Pending - requires admin approval)
+      const transfer = await storage.createFundTransfer({
+        userId,
+        fromAccountId,
+        toAccountId: toAccount.id, // Store the actual account ID
+        amount: transferAmount.toString(),
+        currency: "USD",
+        status: "Pending", // External transfers require approval
+        notes: `External transfer to ${toAccountNumber}. Fee: $${fee.toFixed(2)}. OTP Method: ${otpMethod}`,
+      });
+
+      // Deduct amount + fee from source account immediately
+      const newFromBalance = (currentBalance - totalDeduction).toString();
+      await storage.updateTradingAccount(fromAccountId, { balance: newFromBalance });
+
+      // Create notification
+      await storage.createNotification({
+        userId,
+        title: "External Transfer Initiated",
+        message: `Transfer of $${transferAmount.toFixed(2)} to ${toAccountNumber} is pending approval. Fee: $${fee.toFixed(2)}.`,
+        type: "info",
+      });
+
+      res.status(201).json({
+        ...transfer,
+        fee: fee.toFixed(2),
+        totalDeduction: totalDeduction.toFixed(2),
+        message: "Transfer initiated. Please verify with OTP if required.",
+      });
+    } catch (error) {
+      console.error("External transfer error:", error);
+      res.status(500).json({ message: "Failed to process transfer" });
     }
   });
 
@@ -900,6 +1317,43 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  app.patch("/api/admin/users/:id", async (req, res) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+
+      const adminId = getCurrentAdminId(req)!;
+      const user = await storage.getUser(req.params.id);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Don't allow password or id updates through this endpoint
+      const { password, id, ...allowedUpdates } = req.body;
+
+      const updated = await storage.updateUser(req.params.id, allowedUpdates);
+
+      if (!updated) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Log activity
+      await logActivity(
+        adminId,
+        "update_user",
+        "user",
+        req.params.id,
+        `Updated user details: ${user.email}`
+      );
+
+      const { password: _, ...userWithoutPassword } = updated;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Failed to update user:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
   app.patch("/api/admin/users/:id/toggle", async (req, res) => {
     try {
       if (!(await requireAdmin(req, res))) return;
@@ -943,8 +1397,13 @@ export async function registerRoutes(app: Express): Promise<void> {
       if (!(await requireAdmin(req, res))) return;
 
       const documents = await storage.getAllDocuments();
+      console.log(`[DEBUG] Fetching all documents: Found ${documents.length} documents`);
+      if (documents.length > 0) {
+        console.log(`[DEBUG] First document:`, JSON.stringify(documents[0], null, 2));
+      }
       res.json(documents);
     } catch (error) {
+      console.error("Failed to fetch documents:", error);
       res.status(500).json({ message: "Failed to fetch documents" });
     }
   });
@@ -986,6 +1445,168 @@ export async function registerRoutes(app: Express): Promise<void> {
       res.json(updated);
     } catch (error) {
       res.status(500).json({ message: "Failed to update document" });
+    }
+  });
+
+  // Admin Deposit Management
+  app.get("/api/admin/deposits", async (req, res) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+
+      const adminId = getCurrentAdminId(req)!;
+      const admin = await storage.getAdminUser(adminId);
+      
+      let deposits;
+
+      if (admin!.role === "super_admin") {
+        deposits = await storage.getAllDeposits();
+      } else if (admin!.role === "middle_admin") {
+        const assignments = await storage.getAdminCountryAssignments(adminId);
+        const countries = assignments.map(a => a.country);
+        const allUsers = await storage.getAllUsers();
+        const filteredUsers = allUsers.filter(user => user.country && countries.includes(user.country));
+        const userIds = filteredUsers.map(u => u.id);
+        const allDeposits = await storage.getAllDeposits();
+        deposits = allDeposits.filter(dep => userIds.includes(dep.userId));
+      } else {
+        deposits = await storage.getAllDeposits();
+      }
+
+      res.json(deposits);
+    } catch (error) {
+      console.error("Failed to fetch deposits:", error);
+      res.status(500).json({ message: "Failed to fetch deposits" });
+    }
+  });
+
+  app.patch("/api/admin/deposits/:id/approve", async (req, res) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+
+      const adminId = getCurrentAdminId(req)!;
+      const { amount } = req.body;
+
+      const deposit = await storage.getDeposit(req.params.id);
+      if (!deposit) {
+        return res.status(404).json({ message: "Deposit not found" });
+      }
+
+      const depositAmount = amount ? parseFloat(amount) : parseFloat(deposit.amount);
+      
+      // Update deposit status
+      const updated = await storage.updateDepositStatus(deposit.id, "Completed");
+
+      // Add amount to trading account
+      if (deposit.accountId) {
+        const account = await storage.getTradingAccount(deposit.accountId);
+        if (account) {
+          const newBalance = (parseFloat(account.balance || "0") + depositAmount).toString();
+          await storage.updateTradingAccount(deposit.accountId, { balance: newBalance });
+
+          // Sync with MT5 if enabled
+          if (process.env.MT5_ENABLED === "true" && account.type === "Live") {
+            try {
+              await mt5Service.updateBalance(
+                account.accountId,
+                depositAmount,
+                `Deposit approved: ${deposit.id}`
+              );
+            } catch (mt5Error) {
+              console.error("Failed to sync deposit with MT5:", mt5Error);
+            }
+          }
+        }
+      }
+
+      // Credit commission to IB wallet if user was referred
+      const user = await storage.getUser(deposit.userId);
+      if (user && user.referredBy) {
+        try {
+          const ibWallets = await storage.getIBCBWallets(user.referredBy);
+          let ibWallet = ibWallets.find(w => w.walletType === "IB");
+          
+          if (!ibWallet) {
+            // Create IB wallet if it doesn't exist
+            ibWallet = await storage.createIBCBWallet({
+              userId: user.referredBy,
+              walletType: "IB",
+              balance: "0",
+              currency: "USD",
+              commissionRate: "5.0",
+              totalCommission: "0",
+              enabled: true,
+            });
+          }
+
+          // Calculate commission (default 5% or use wallet rate)
+          const commissionRate = parseFloat(ibWallet.commissionRate || "5.0");
+          const commission = depositAmount * (commissionRate / 100);
+          
+          // Update IB wallet balance and total commission
+          const newBalance = (parseFloat(ibWallet.balance || "0") + commission).toString();
+          const newTotalCommission = (parseFloat(ibWallet.totalCommission || "0") + commission).toString();
+          
+          await storage.updateIBCBWallet(ibWallet.id, {
+            balance: newBalance,
+            totalCommission: newTotalCommission,
+            updatedAt: new Date(),
+          });
+
+          // Create notification for IB
+          await storage.createNotification({
+            userId: user.referredBy,
+            title: "Commission Earned",
+            message: `You earned $${commission.toFixed(2)} commission from ${user.fullName || user.email}'s deposit of $${depositAmount.toFixed(2)}.`,
+            type: "success",
+          });
+        } catch (error) {
+          console.error("Failed to credit IB commission:", error);
+          // Don't fail the deposit approval if commission crediting fails
+        }
+      }
+
+      // Log activity
+      await logActivity(
+        adminId,
+        "approve_deposit",
+        "deposit",
+        deposit.id,
+        `Approved deposit of $${depositAmount.toFixed(2)} for user ${deposit.userId}`
+      );
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Failed to approve deposit:", error);
+      res.status(500).json({ message: "Failed to approve deposit" });
+    }
+  });
+
+  app.patch("/api/admin/deposits/:id/reject", async (req, res) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+
+      const adminId = getCurrentAdminId(req)!;
+      const deposit = await storage.getDeposit(req.params.id);
+      
+      if (!deposit) {
+        return res.status(404).json({ message: "Deposit not found" });
+      }
+
+      const updated = await storage.updateDepositStatus(deposit.id, "Rejected");
+
+      // Log activity
+      await logActivity(
+        adminId,
+        "reject_deposit",
+        "deposit",
+        deposit.id,
+        `Rejected deposit of $${deposit.amount} for user ${deposit.userId}`
+      );
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Failed to reject deposit:", error);
+      res.status(500).json({ message: "Failed to reject deposit" });
     }
   });
 
@@ -1498,6 +2119,52 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Admin Statistics
+  // Admin - Account Types Stats
+  app.get("/api/admin/accounts/stats", async (req, res) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+
+      const adminId = getCurrentAdminId(req)!;
+      const admin = await storage.getAdminUser(adminId);
+      
+      let accounts;
+
+      if (admin!.role === "super_admin") {
+        accounts = await storage.getAllTradingAccounts();
+      } else if (admin!.role === "middle_admin") {
+        const assignments = await storage.getAdminCountryAssignments(adminId);
+        const countries = assignments.map(a => a.country);
+        const allUsers = await storage.getAllUsers();
+        const filteredUsers = allUsers.filter(user => user.country && countries.includes(user.country));
+        const userIds = filteredUsers.map(u => u.id);
+        const allAccounts = await storage.getAllTradingAccounts();
+        accounts = allAccounts.filter(acc => userIds.includes(acc.userId));
+      } else {
+        accounts = await storage.getAllTradingAccounts();
+      }
+
+      // Count by account type/group combinations
+      const liveAccounts = accounts.filter(a => a.type === "Live").length;
+      const ibAccounts = accounts.filter(a => a.group === "IB" || a.type === "IB").length;
+      const championAccounts = accounts.filter(a => a.group === "Champion" || a.type === "Champion").length;
+      const ndbAccounts = accounts.filter(a => a.type === "Bonus" || a.group === "NDB" || a.type === "NDB").length;
+      const socialTradingAccounts = accounts.filter(a => a.group === "Social" || a.type === "Social").length;
+      const bonusShiftingAccounts = accounts.filter(a => a.group === "Bonus" && a.type !== "Bonus").length;
+
+      res.json({
+        liveAccounts,
+        ibAccounts,
+        championAccounts,
+        ndbAccounts,
+        socialTradingAccounts,
+        bonusShiftingAccounts,
+      });
+    } catch (error) {
+      console.error("Failed to fetch account stats:", error);
+      res.status(500).json({ message: "Failed to fetch account statistics" });
+    }
+  });
+
   app.get("/api/admin/stats", async (req, res) => {
     try {
       if (!(await requireAdmin(req, res))) return;
@@ -1541,6 +2208,30 @@ export async function registerRoutes(app: Express): Promise<void> {
         withdrawals = await storage.getAllWithdrawals();
       }
 
+      // Calculate country breakdown (users)
+      const countryBreakdown: Record<string, number> = {};
+      users.forEach(user => {
+        if (user.country) {
+          countryBreakdown[user.country] = (countryBreakdown[user.country] || 0) + 1;
+        }
+      });
+      const countryList = Object.entries(countryBreakdown)
+        .map(([country, count]) => ({ country, count }))
+        .sort((a, b) => b.count - a.count);
+
+      // Calculate country breakdown for trading accounts
+      const countryAccountsBreakdown: Record<string, number> = {};
+      const userMap = new Map(users.map(u => [u.id, u]));
+      accounts.forEach(account => {
+        const user = userMap.get(account.userId);
+        if (user && user.country) {
+          countryAccountsBreakdown[user.country] = (countryAccountsBreakdown[user.country] || 0) + 1;
+        }
+      });
+      const countryAccountsList = Object.entries(countryAccountsBreakdown)
+        .map(([country, count]) => ({ country, count }))
+        .sort((a, b) => b.count - a.count);
+
       const stats = {
         totalUsers: users.length,
         enabledUsers: users.filter(u => u.enabled).length,
@@ -1563,12 +2254,235 @@ export async function registerRoutes(app: Express): Promise<void> {
           .filter(w => w.status === "Completed")
           .reduce((sum, w) => sum + parseFloat(w.amount), 0)
           .toFixed(2),
+        countryBreakdown: countryList,
+        countryAccountsBreakdown: countryAccountsList,
       };
 
       res.json(stats);
     } catch (error) {
       console.error("Failed to fetch admin stats:", error);
       res.status(500).json({ message: "Failed to fetch statistics" });
+    }
+  });
+
+  // ========== SUPPORT TICKETS ==========
+
+  // User - Get own support tickets
+  app.get("/api/support-tickets", async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const tickets = await storage.getSupportTickets(userId);
+      // Also fetch replies for each ticket
+      const ticketsWithReplies = await Promise.all(
+        tickets.map(async (ticket) => {
+          const replies = await storage.getSupportTicketReplies(ticket.id);
+          return { ...ticket, replies };
+        })
+      );
+
+      res.json(ticketsWithReplies);
+    } catch (error) {
+      console.error("Failed to fetch support tickets:", error);
+      res.status(500).json({ message: "Failed to fetch support tickets" });
+    }
+  });
+
+  // User - Create support ticket
+  app.post("/api/support-tickets", async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { subject, message, category, priority } = req.body;
+
+      if (!subject || !message) {
+        return res.status(400).json({ message: "Subject and message are required" });
+      }
+
+      const ticket = await storage.createSupportTicket({
+        userId,
+        subject,
+        message,
+        category: category || "Other",
+        priority: priority || "Medium",
+        status: "Open",
+      });
+
+      // Note: Admin notifications would need a separate admin_notifications table
+      // For now, we'll skip admin notifications as they can see tickets in the admin panel
+
+      res.status(201).json(ticket);
+    } catch (error) {
+      console.error("Failed to create support ticket:", error);
+      res.status(500).json({ message: "Failed to create support ticket" });
+    }
+  });
+
+  // User - Reply to support ticket
+  app.post("/api/support-tickets/:id/reply", async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { message } = req.body;
+      if (!message || !message.trim()) {
+        return res.status(400).json({ message: "Message is required" });
+      }
+
+      const ticket = await storage.getSupportTicket(req.params.id);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+
+      if (ticket.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const reply = await storage.createSupportTicketReply({
+        ticketId: req.params.id,
+        userId,
+        message: message.trim(),
+      });
+
+      // Update ticket status if it was closed
+      if (ticket.status === "Closed") {
+        await storage.updateSupportTicketStatus(req.params.id, "Open");
+      }
+
+      res.status(201).json(reply);
+    } catch (error) {
+      console.error("Failed to add reply:", error);
+      res.status(500).json({ message: "Failed to add reply" });
+    }
+  });
+
+  // Admin - Get all support tickets
+  app.get("/api/admin/support-tickets", async (req, res) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+
+      const tickets = await storage.getSupportTickets();
+      // Fetch replies for each ticket
+      const ticketsWithReplies = await Promise.all(
+        tickets.map(async (ticket) => {
+          const replies = await storage.getSupportTicketReplies(ticket.id);
+          return { ...ticket, replies };
+        })
+      );
+
+      res.json(ticketsWithReplies);
+    } catch (error) {
+      console.error("Failed to fetch support tickets:", error);
+      res.status(500).json({ message: "Failed to fetch support tickets" });
+    }
+  });
+
+  // Admin - Reply to support ticket
+  app.post("/api/admin/support-tickets/:id/reply", async (req, res) => {
+    try {
+      const canProceed = await requireAdmin(req, res);
+      if (!canProceed) return;
+
+      const adminId = getCurrentAdminId(req)!;
+      const { message } = req.body;
+
+      if (!message || !message.trim()) {
+        return res.status(400).json({ message: "Message is required" });
+      }
+
+      const ticket = await storage.getSupportTicket(req.params.id);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+
+      const reply = await storage.createSupportTicketReply({
+        ticketId: req.params.id,
+        adminId,
+        message: message.trim(),
+      });
+
+      // Update ticket status to "In Progress" if it was "Open"
+      if (ticket.status === "Open") {
+        await storage.updateSupportTicketStatus(req.params.id, "In Progress");
+      }
+
+      // Notify user
+      if (ticket.userId) {
+        await storage.createNotification({
+          userId: ticket.userId,
+          title: "New Reply to Your Ticket",
+          message: `Admin replied to: ${ticket.subject}`,
+          type: "info",
+        });
+      }
+
+      // Log activity
+      await logActivity(
+        adminId,
+        "reply_support_ticket",
+        "support_ticket",
+        req.params.id,
+        `Replied to ticket: ${ticket.subject}`
+      );
+
+      res.status(201).json(reply);
+    } catch (error) {
+      console.error("Failed to add admin reply:", error);
+      res.status(500).json({ message: "Failed to add reply" });
+    }
+  });
+
+  // Admin - Update ticket status
+  app.patch("/api/admin/support-tickets/:id/status", async (req, res) => {
+    try {
+      const canProceed = await requireAdmin(req, res);
+      if (!canProceed) return;
+
+      const adminId = getCurrentAdminId(req)!;
+      const { status } = req.body;
+
+      if (!status || !["Open", "In Progress", "Resolved", "Closed"].includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+
+      const ticket = await storage.getSupportTicket(req.params.id);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+
+      const updated = await storage.updateSupportTicketStatus(req.params.id, status);
+
+      // Notify user if status changed
+      if (ticket.userId && ticket.status !== status) {
+        await storage.createNotification({
+          userId: ticket.userId,
+          title: "Ticket Status Updated",
+          message: `Your ticket "${ticket.subject}" status changed to ${status}`,
+          type: "info",
+        });
+      }
+
+      // Log activity
+      await logActivity(
+        adminId,
+        "update_ticket_status",
+        "support_ticket",
+        req.params.id,
+        `Updated ticket status to ${status}`
+      );
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Failed to update ticket status:", error);
+      res.status(500).json({ message: "Failed to update ticket status" });
     }
   });
 

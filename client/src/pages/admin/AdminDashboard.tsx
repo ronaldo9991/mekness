@@ -6,6 +6,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import AdminSidebar from "@/components/AdminSidebar";
 import AdminDashboardOverview from "./AdminDashboardOverview";
 import AdminClients from "./AdminClients";
+import AdminCountries from "./AdminCountries";
 import AdminDeposits from "./AdminDeposits";
 import AdminWithdrawals from "./AdminWithdrawals";
 import AdminAccounts from "./AdminAccounts";
@@ -69,10 +70,11 @@ export default function AdminDashboard() {
           <Route path="/admin/clients">
             <AdminClients />
           </Route>
+          <Route path="/admin/countries">
+            <AdminCountries />
+          </Route>
           <Route path="/admin/documents">
-            {admin.role === "super_admin" && <SuperAdminDashboard admin={admin} />}
-            {admin.role === "middle_admin" && <MiddleAdminDashboard admin={admin} />}
-            {admin.role === "normal_admin" && <NormalAdminDashboard admin={admin} />}
+            <AdminDocuments admin={admin} />
           </Route>
           <Route path="/admin/deposits">
             <AdminDeposits />

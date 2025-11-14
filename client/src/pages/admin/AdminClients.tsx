@@ -5,21 +5,48 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import DataTable from "@/components/DataTable";
-import { Search, Mail, UserPlus, Loader2, Copy, Check } from "lucide-react";
+import { Search, Mail, UserPlus, Loader2, Copy, Check, Eye, Edit, Save } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { User } from "@shared/schema";
+
+const COUNTRIES = [
+  "United States", "United Kingdom", "Canada", "Australia", "Germany", "France", "Italy", "Spain",
+  "Netherlands", "Belgium", "Switzerland", "Austria", "Sweden", "Norway", "Denmark", "Finland",
+  "Poland", "Portugal", "Greece", "Ireland", "Czech Republic", "Romania", "Hungary", "Bulgaria",
+  "Croatia", "Slovakia", "Slovenia", "Estonia", "Latvia", "Lithuania", "Luxembourg", "Malta",
+  "Cyprus", "Japan", "China", "India", "South Korea", "Singapore", "Malaysia", "Thailand",
+  "Indonesia", "Philippines", "Vietnam", "Hong Kong", "Taiwan", "New Zealand", "South Africa",
+  "Egypt", "Nigeria", "Kenya", "Morocco", "Ghana", "United Arab Emirates", "Saudi Arabia",
+  "Israel", "Turkey", "Brazil", "Mexico", "Argentina", "Chile", "Colombia", "Peru", "Venezuela",
+  "Russia", "Ukraine", "Kazakhstan", "Belarus", "Georgia", "Armenia", "Azerbaijan", "Other"
+];
 
 export default function AdminClients() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [fundsDialogOpen, setFundsDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedAccount, setSelectedAccount] = useState("");
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
   const [isAddingFunds, setIsAddingFunds] = useState(true);
+  const [viewEditDialogOpen, setViewEditDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    country: "",
+    city: "",
+    address: "",
+    zipCode: "",
+  });
 
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
@@ -65,6 +92,50 @@ export default function AdminClients() {
       });
     },
   });
+
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ userId, updates }: { userId: string; updates: Partial<User> }) => {
+      return await apiRequest("PATCH", `/api/admin/users/${userId}`, updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      setViewEditDialogOpen(false);
+      setEditingUser(null);
+      toast({
+        title: "Success",
+        description: "User details updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const openViewEditDialog = (user: User) => {
+    setEditingUser(user);
+    setEditForm({
+      fullName: user.fullName || "",
+      email: user.email || "",
+      phone: user.phone || "",
+      country: user.country || "",
+      city: user.city || "",
+      address: user.address || "",
+      zipCode: user.zipCode || "",
+    });
+    setViewEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingUser) return;
+    updateUserMutation.mutate({
+      userId: editingUser.id,
+      updates: editForm,
+    });
+  };
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -168,8 +239,10 @@ export default function AdminClients() {
     {
       key: "country",
       label: "Country",
-      render: (value: string | null) => (
-        <Badge variant="outline">{value || "N/A"}</Badge>
+      render: (_: any, row: User) => (
+        <Badge variant="outline" className={row.country ? "bg-primary/10 text-primary border-primary/30" : ""}>
+          {row.country || "N/A"}
+        </Badge>
       ),
     },
     {
@@ -193,6 +266,14 @@ export default function AdminClients() {
       label: "Actions",
       render: (_: any, row: User) => (
         <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => openViewEditDialog(row)}
+          >
+            <Eye className="w-3 h-3 mr-1" />
+            View/Edit
+          </Button>
           <Button
             size="sm"
             variant="outline"
@@ -250,6 +331,165 @@ export default function AdminClients() {
       <Card className="border-card-border">
         <DataTable columns={columns} data={filteredUsers} />
       </Card>
+
+      {/* View/Edit User Dialog */}
+      <Dialog open={viewEditDialogOpen} onOpenChange={setViewEditDialogOpen}>
+        <DialogContent className="bg-black border-primary/30 max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-primary">View & Edit Client Details</DialogTitle>
+            <DialogDescription>
+              View and update client information
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editingUser && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>User ID</Label>
+                  <Input value={editingUser.id} disabled className="font-mono text-xs" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Username</Label>
+                  <Input value={editingUser.username} disabled />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Full Name *</Label>
+                <Input
+                  value={editForm.fullName}
+                  onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
+                  placeholder="John Doe"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Email *</Label>
+                <Input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  placeholder="user@example.com"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Phone Number *</Label>
+                  <Input
+                    type="tel"
+                    value={editForm.phone}
+                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                    placeholder="+1 234 567 8900"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Country *</Label>
+                  <Select
+                    value={editForm.country || ""}
+                    onValueChange={(value) => setEditForm({ ...editForm, country: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select country" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                      {COUNTRIES.map((country) => (
+                        <SelectItem key={country} value={country}>
+                          {country}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>City *</Label>
+                  <Input
+                    value={editForm.city}
+                    onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                    placeholder="New York"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Zip Code</Label>
+                  <Input
+                    value={editForm.zipCode}
+                    onChange={(e) => setEditForm({ ...editForm, zipCode: e.target.value })}
+                    placeholder="10001"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Address</Label>
+                <Textarea
+                  value={editForm.address}
+                  onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                  placeholder="Street address"
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="space-y-2">
+                  <Label>Referral ID</Label>
+                  <Input value={editingUser.referralId || "N/A"} disabled className="font-mono" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Member Since</Label>
+                  <Input 
+                    value={editingUser.createdAt ? new Date(editingUser.createdAt).toLocaleDateString() : "N/A"} 
+                    disabled 
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <Input 
+                    value={editingUser.enabled ? "Active" : "Disabled"} 
+                    disabled 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Verified</Label>
+                  <Input 
+                    value={editingUser.verified ? "Yes" : "No"} 
+                    disabled 
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveEdit}
+              disabled={updateUserMutation.isPending}
+              className="bg-primary hover:bg-primary/90"
+            >
+              {updateUserMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Changes
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

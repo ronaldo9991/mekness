@@ -251,11 +251,11 @@ export class MemStorage implements IStorage {
 
     // Create super admin user
     const superAdminId = randomUUID();
-    const hashedPassword = bcrypt.hashSync("Admin@12345", 10);
+    const hashedPasswordSuper = bcrypt.hashSync("Admin@12345", 10);
     const superAdmin: AdminUser = {
       id: superAdminId,
       username: "superadmin",
-      password: hashedPassword,
+      password: hashedPasswordSuper,
       email: "superadmin@mekness.com",
       fullName: "Super Administrator",
       role: "super_admin",
@@ -264,6 +264,38 @@ export class MemStorage implements IStorage {
       createdBy: null,
     };
     this.adminUsers.set(superAdminId, superAdmin);
+
+    // Create middle admin user
+    const middleAdminId = randomUUID();
+    const hashedPasswordMiddle = bcrypt.hashSync("Middle@12345", 10);
+    const middleAdmin: AdminUser = {
+      id: middleAdminId,
+      username: "middleadmin",
+      password: hashedPasswordMiddle,
+      email: "middleadmin@mekness.com",
+      fullName: "Middle Administrator",
+      role: "middle_admin",
+      enabled: true,
+      createdAt: new Date(),
+      createdBy: superAdminId,
+    };
+    this.adminUsers.set(middleAdminId, middleAdmin);
+
+    // Create normal admin user
+    const normalAdminId = randomUUID();
+    const hashedPasswordNormal = bcrypt.hashSync("Normal@12345", 10);
+    const normalAdmin: AdminUser = {
+      id: normalAdminId,
+      username: "normaladmin",
+      password: hashedPasswordNormal,
+      email: "normaladmin@mekness.com",
+      fullName: "Normal Administrator",
+      role: "normal_admin",
+      enabled: true,
+      createdAt: new Date(),
+      createdBy: superAdminId,
+    };
+    this.adminUsers.set(normalAdminId, normalAdmin);
   }
 
   // Users
@@ -711,4 +743,10 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+import { DbStorage } from "./db-storage";
+
+// Use database storage for production/local development
+// Use MemStorage for testing/demo only
+export const storage = new DbStorage();
+
+// For demo/testing, use: export const storage = new MemStorage();
