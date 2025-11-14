@@ -11,6 +11,7 @@ import type { LucideIcon } from "lucide-react";
 import { Loader2, ShieldCheck, Lock, Cpu, ArrowLeft, Sparkles, CheckCircle2, TrendingUp, Globe, Award, Zap, Users } from "lucide-react";
 import AnimatedGrid from "./AnimatedGrid";
 import ParticleField from "./ParticleField";
+import SearchableCountrySelect from "./SearchableCountrySelect";
 
 interface AuthCardProps {
   type?: "signin" | "signup";
@@ -271,15 +272,13 @@ export default function AuthCard({ type = "signup" }: AuthCardProps) {
                             <Label htmlFor="country" className="text-xs font-medium text-muted-foreground">
                               Country <span className="text-primary">*</span>
                             </Label>
-                            <Input
+                            <SearchableCountrySelect
                               id="country"
-                              type="text"
-                              placeholder="United States"
                               value={country}
-                              onChange={(e) => setCountry(e.target.value)}
-                              required
+                              onChange={setCountry}
+                              placeholder="Search your country..."
                               disabled={loading}
-                              className="h-10 text-sm border-primary/20 bg-black/40 focus-visible:ring-2 focus-visible:ring-primary/50 transition-all"
+                              className="w-full"
                             />
                           </div>
                         </div>
