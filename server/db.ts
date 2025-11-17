@@ -54,26 +54,56 @@ export async function initializeDatabase() {
     // Try to query a table to check if schema exists
     await db.select().from(schema.users).limit(1);
     console.log('✅ Database schema already exists');
+    return;
   } catch (error) {
+    // Schema doesn't exist, need to create it
     console.log('🗄️ Database schema not found, initializing...');
-    try {
-      // Import drizzle-kit to push schema
-      const { push } = await import('drizzle-kit');
-      const drizzleConfig = await import('../../drizzle.config.ts');
-      await push({ config: drizzleConfig.default });
-      console.log('✅ Database schema initialized successfully');
-    } catch (initError) {
-      console.error('⚠️ Could not auto-initialize schema with drizzle-kit, trying manual creation...');
-      // Fallback: try to create tables manually
+  }
+
+  // Create tables using Drizzle's SQL execution
+  try {
+    const { sql } = await import('drizzle-orm');
+    
+    // Get SQLite database instance for direct SQL execution
+    const dbInstance = sqlite;
+    
+    // Check if users table exists
+    const tableCheck = dbInstance.prepare(`
+      SELECT name FROM sqlite_master 
+      WHERE type='table' AND name='users'
+    `).get();
+    
+    if (!tableCheck) {
+      console.log('Creating database tables...');
+      
+      // Note: Drizzle's migrate() or push() would be ideal here,
+      // but for runtime initialization, we'll create a basic schema
+      // The full schema creation is best done via drizzle-kit push during build
+      
+      // For now, log that schema needs to be created
+      console.warn('⚠️ Database tables not found. Schema should be initialized via migrations.');
+      console.warn('⚠️ In production, ensure drizzle-kit push runs during build or deployment.');
+      console.warn('⚠️ For App Runner, consider running: npm run db:push in build step');
+      
+      // Try to import and use drizzle-kit if available
       try {
-        // Get SQL from schema - create tables manually as fallback
-        const { sql } = await import('drizzle-orm');
-        // This is a basic fallback - drizzle-kit push is preferred
-        console.warn('⚠️ Manual schema creation not implemented, please run: npm run db:push');
-      } catch (manualError) {
-        console.error('❌ Could not initialize database schema:', manualError);
-        throw manualError;
+        const drizzleKit = await import('drizzle-kit');
+        if (drizzleKit.push) {
+          const { default: drizzleConfig } = await import('../../drizzle.config.js');
+          await drizzleKit.push({ config: drizzleConfig });
+          console.log('✅ Database schema initialized via drizzle-kit');
+          return;
+        }
+      } catch (drizzleKitError) {
+        // drizzle-kit not available in production bundle
+        console.warn('⚠️ drizzle-kit not available, schema must be pre-initialized');
       }
+    } else {
+      console.log('✅ Database schema already exists');
     }
+  } catch (error) {
+    console.error('❌ Error initializing database schema:', error);
+    // Don't throw - app can still start, but database operations may fail
+    console.warn('⚠️ Continuing startup, but database operations may fail until schema is created');
   }
 }

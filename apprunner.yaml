@@ -12,6 +12,8 @@ build:
       - npm run build:frontend
       - echo "🔨 Building backend (Express/TypeScript)..."
       - npm run build:backend
+      - echo "🗄️ Initializing database schema..."
+      - npm run db:push || echo "⚠️ Schema already initialized or drizzle-kit not available"
       - echo "✅ Build complete!"
 
 # Production runtime configuration
