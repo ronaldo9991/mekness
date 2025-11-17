@@ -66,12 +66,21 @@ app.use((req, res, next) => {
 
 
 async function bootstrap(): Promise<{ app: express.Express; server: Server }> {
+  // Initialize database schema first
+  try {
+    const { initializeDatabase } = await import("./db.js");
+    await initializeDatabase();
+  } catch (error) {
+    log("⚠️ Warning: Database initialization failed:", error);
+    // Continue anyway - schema might already exist
+  }
+
   // Seed database with initial data
   try {
     const { seedDatabase } = await import("./seed");
     await seedDatabase();
   } catch (error) {
-    log("Warning: Database seeding failed (may already be seeded)");
+    log("⚠️ Warning: Database seeding failed (may already be seeded):", error);
   }
 
   await registerRoutes(app);
