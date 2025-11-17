@@ -11,7 +11,7 @@ build:
       - echo "🔨 Building frontend (React/Vite)..."
       - npm run build:frontend
       - echo "🔨 Building backend (Express/TypeScript)..."
-      - npm run build:backend || npm run build
+      - npm run build:backend
       - echo "✅ Build complete!"
 
 # Production runtime configuration
