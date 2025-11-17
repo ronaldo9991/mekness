@@ -60,32 +60,18 @@ export async function initializeDatabase() {
     console.log('🗄️ Database schema not found, initializing...');
   }
 
-  // Create tables using Drizzle's SQL execution
+  // Create tables using runtime migrations
   try {
-    const { sql } = await import('drizzle-orm');
-    
-    // Get SQLite database instance for direct SQL execution
-    const dbInstance = sqlite;
-    
     // Check if users table exists
-    const tableCheck = dbInstance.prepare(`
+    const tableCheck = sqlite.prepare(`
       SELECT name FROM sqlite_master 
       WHERE type='table' AND name='users'
     `).get();
     
     if (!tableCheck) {
-      console.log('Creating database tables...');
+      console.log('Creating database tables using runtime migrations...');
       
-      // Note: Drizzle's migrate() or push() would be ideal here,
-      // but for runtime initialization, we'll create a basic schema
-      // The full schema creation is best done via drizzle-kit push during build
-      
-      // For now, log that schema needs to be created
-      console.warn('⚠️ Database tables not found. Schema should be initialized via migrations.');
-      console.warn('⚠️ In production, ensure drizzle-kit push runs during build or deployment.');
-      console.warn('⚠️ For App Runner, consider running: npm run db:push in build step');
-      
-      // Try to import and use drizzle-kit if available
+      // Try to use drizzle-kit first (if available during build)
       try {
         const drizzleKit = await import('drizzle-kit');
         if (drizzleKit.push) {
@@ -95,15 +81,27 @@ export async function initializeDatabase() {
           return;
         }
       } catch (drizzleKitError) {
-        // drizzle-kit not available in production bundle
-        console.warn('⚠️ drizzle-kit not available, schema must be pre-initialized');
+        // drizzle-kit not available - use runtime SQL migrations
+        console.log('⚠️ drizzle-kit not available, using runtime SQL migrations...');
+        const { createTables } = await import('./migrations.js');
+        createTables(sqlite);
+        console.log('✅ Database schema initialized via runtime migrations');
       }
     } else {
       console.log('✅ Database schema already exists');
     }
   } catch (error) {
     console.error('❌ Error initializing database schema:', error);
-    // Don't throw - app can still start, but database operations may fail
-    console.warn('⚠️ Continuing startup, but database operations may fail until schema is created');
+    // Try fallback runtime migrations
+    try {
+      console.log('⚠️ Attempting fallback runtime migrations...');
+      const { createTables } = await import('./migrations.js');
+      createTables(sqlite);
+      console.log('✅ Database schema initialized via fallback migrations');
+    } catch (fallbackError) {
+      console.error('❌ Fallback migration also failed:', fallbackError);
+      // Don't throw - app can still start, but database operations may fail
+      console.warn('⚠️ Continuing startup, but database operations may fail until schema is created');
+    }
   }
 }
