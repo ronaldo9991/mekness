@@ -4,10 +4,10 @@ frontend:
     preBuild:
       commands:
         - echo "Installing dependencies..."
-        - npm ci
+        - npm ci --cache .npm --prefer-offline
     build:
       commands:
-        - echo "Building frontend static files..."
+        - echo "Building frontend static files ONLY (Amplify serves static files)..."
         - npm run build:frontend
   artifacts:
     baseDirectory: dist/public
@@ -16,6 +16,7 @@ frontend:
   cache:
     paths:
       - node_modules/**/*
+      - .npm/**/*
 
 # SPA redirects - all routes to index.html
 rewrites:
