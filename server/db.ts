@@ -51,57 +51,63 @@ export const pool = null; // SQLite doesn't use connection pools
 // Initialize database schema on first run
 export async function initializeDatabase() {
   try {
-    // Try to query a table to check if schema exists
-    await db.select().from(schema.users).limit(1);
-    console.log('✅ Database schema already exists');
-    return;
-  } catch (error) {
-    // Schema doesn't exist, need to create it
-    console.log('🗄️ Database schema not found, initializing...');
-  }
-
-  // Create tables using runtime migrations
-  try {
-    // Check if users table exists
+    // Check if users table exists using direct SQL query
     const tableCheck = sqlite.prepare(`
       SELECT name FROM sqlite_master 
       WHERE type='table' AND name='users'
-    `).get();
+    `).get() as { name: string } | undefined;
     
-    if (!tableCheck) {
-      console.log('Creating database tables using runtime migrations...');
-      
-      // Try to use drizzle-kit first (if available during build)
+    if (tableCheck) {
+      console.log('✅ Database schema already exists');
+      return;
+    }
+    
+    // Table doesn't exist - create it using runtime migrations
+    console.log('🗄️ Database schema not found, initializing...');
+    
+    // Try to use drizzle-kit first (if available during build)
+    let schemaCreated = false;
+    try {
+      const drizzleKit = await import('drizzle-kit');
+      if (drizzleKit.push) {
+        const { default: drizzleConfig } = await import('../../drizzle.config.js');
+        await drizzleKit.push({ config: drizzleConfig });
+        console.log('✅ Database schema initialized via drizzle-kit');
+        schemaCreated = true;
+      }
+    } catch (drizzleKitError) {
+      // drizzle-kit not available - use runtime SQL migrations
+      console.log('⚠️ drizzle-kit not available, using runtime SQL migrations...');
+    }
+    
+    // If drizzle-kit didn't work, use runtime SQL migrations
+    if (!schemaCreated) {
       try {
-        const drizzleKit = await import('drizzle-kit');
-        if (drizzleKit.push) {
-          const { default: drizzleConfig } = await import('../../drizzle.config.js');
-          await drizzleKit.push({ config: drizzleConfig });
-          console.log('✅ Database schema initialized via drizzle-kit');
-          return;
-        }
-      } catch (drizzleKitError) {
-        // drizzle-kit not available - use runtime SQL migrations
-        console.log('⚠️ drizzle-kit not available, using runtime SQL migrations...');
+        // Import and use runtime migrations
         const { createTables } = await import('./migrations.js');
         createTables(sqlite);
         console.log('✅ Database schema initialized via runtime migrations');
+        schemaCreated = true;
+      } catch (migrationError) {
+        console.error('❌ Error running runtime migrations:', migrationError);
+        throw migrationError;
       }
-    } else {
-      console.log('✅ Database schema already exists');
     }
+    
+    // Verify tables were created
+    const verifyCheck = sqlite.prepare(`
+      SELECT name FROM sqlite_master 
+      WHERE type='table' AND name='users'
+    `).get() as { name: string } | undefined;
+    
+    if (!verifyCheck) {
+      throw new Error('Database tables were not created successfully');
+    }
+    
+    console.log('✅ Database schema initialization verified');
   } catch (error) {
     console.error('❌ Error initializing database schema:', error);
-    // Try fallback runtime migrations
-    try {
-      console.log('⚠️ Attempting fallback runtime migrations...');
-      const { createTables } = await import('./migrations.js');
-      createTables(sqlite);
-      console.log('✅ Database schema initialized via fallback migrations');
-    } catch (fallbackError) {
-      console.error('❌ Fallback migration also failed:', fallbackError);
-      // Don't throw - app can still start, but database operations may fail
-      console.warn('⚠️ Continuing startup, but database operations may fail until schema is created');
-    }
+    // Don't throw - app can still start, but database operations may fail
+    console.warn('⚠️ Continuing startup, but database operations may fail until schema is created');
   }
 }
