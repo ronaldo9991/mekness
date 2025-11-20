@@ -243,7 +243,7 @@ export default function ForexAdvantages() {
                   {/* Image Left Large */}
                   {variant === 'image-left-large' && (
                     <div className="grid lg:grid-cols-5 gap-8 items-center">
-                      <div className="lg:col-span-3 relative h-[450px] rounded-3xl overflow-hidden group">
+                      <div className="lg:col-span-3 relative h-[450px] rounded-3xl overflow-hidden group shadow-[0_0_20px_rgba(212,175,55,0.15),0_0_40px_rgba(212,175,55,0.1),0_0_60px_rgba(212,175,55,0.05)] hover:shadow-[0_0_25px_rgba(212,175,55,0.2),0_0_50px_rgba(212,175,55,0.12),0_0_75px_rgba(212,175,55,0.08)] transition-shadow duration-500">
                         <img 
                           src={advantage.image}
                           alt={advantage.title}
@@ -255,8 +255,8 @@ export default function ForexAdvantages() {
                             <advantage.icon className="w-10 h-10 text-primary" />
                           </div>
                         </div>
-                      </motion.div>
-                      <Card className="lg:col-span-2 p-8 glass-morphism-strong border-primary/20 shadow-[0_0_30px_rgba(212,175,55,0.35),0_0_60px_rgba(212,175,55,0.2),0_0_90px_rgba(212,175,55,0.1)] hover:shadow-[0_0_40px_rgba(212,175,55,0.45),0_0_80px_rgba(212,175,55,0.25),0_0_120px_rgba(212,175,55,0.15)] transition-shadow duration-500">
+                      </div>
+                      <Card className="lg:col-span-2 p-8 glass-morphism-strong border-primary/20 shadow-[0_0_20px_rgba(212,175,55,0.15),0_0_40px_rgba(212,175,55,0.1),0_0_60px_rgba(212,175,55,0.05)] hover:shadow-[0_0_25px_rgba(212,175,55,0.2),0_0_50px_rgba(212,175,55,0.12),0_0_75px_rgba(212,175,55,0.08)] transition-shadow duration-500">
                         <h3 className="text-3xl font-bold mb-4 text-gradient-gold text-glow-gold inline-block pb-1">{advantage.title}</h3>
                         <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
                           {advantage.description}
@@ -298,7 +298,7 @@ export default function ForexAdvantages() {
                       <motion.div 
                         whileHover={{ scale: 1.03 }}
                         transition={{ duration: 0.5 }}
-                        className="lg:w-[50%] lg:-ml-12 mt-8 lg:mt-0 relative h-[400px] rounded-3xl overflow-hidden group shadow-[0_0_30px_rgba(212,175,55,0.35),0_0_60px_rgba(212,175,55,0.2),0_0_90px_rgba(212,175,55,0.1)] hover:shadow-[0_0_40px_rgba(212,175,55,0.45),0_0_80px_rgba(212,175,55,0.25),0_0_120px_rgba(212,175,55,0.15)] transition-shadow duration-500"
+                        className="lg:w-[50%] lg:-ml-12 mt-8 lg:mt-0 relative h-[400px] rounded-3xl overflow-hidden group shadow-[0_0_20px_rgba(212,175,55,0.15),0_0_40px_rgba(212,175,55,0.1),0_0_60px_rgba(212,175,55,0.05)] hover:shadow-[0_0_25px_rgba(212,175,55,0.2),0_0_50px_rgba(212,175,55,0.12),0_0_75px_rgba(212,175,55,0.08)] transition-shadow duration-500"
                       >
                         <img 
                           src={advantage.image}
@@ -307,7 +307,7 @@ export default function ForexAdvantages() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-l from-black/70 via-black/30 to-transparent"></div>
                         <div className="absolute inset-0 border-2 border-primary/20 rounded-3xl"></div>
-                      </div>
+                      </motion.div>
                     </div>
                   )}
 
@@ -315,7 +315,7 @@ export default function ForexAdvantages() {
                   {variant === 'image-left-stacked' && (
                     <div className="grid lg:grid-cols-2 gap-8 items-start">
                       <div className="space-y-6">
-                        <div className="relative h-[350px] rounded-3xl overflow-hidden group">
+                        <div className="relative h-[350px] rounded-3xl overflow-hidden group shadow-[0_0_20px_rgba(212,175,55,0.15),0_0_40px_rgba(212,175,55,0.1),0_0_60px_rgba(212,175,55,0.05)] hover:shadow-[0_0_25px_rgba(212,175,55,0.2),0_0_50px_rgba(212,175,55,0.12),0_0_75px_rgba(212,175,55,0.08)] transition-shadow duration-500">
                           <img 
                             src={advantage.image}
                             alt={advantage.title}
@@ -323,7 +323,7 @@ export default function ForexAdvantages() {
                           />
                           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/30 to-black/80"></div>
                           <div className="absolute inset-0 border border-primary/30 rounded-3xl"></div>
-                        </motion.div>
+                        </div>
                         <Card className="p-6 glass-morphism border-primary/20">
                           <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -352,7 +352,7 @@ export default function ForexAdvantages() {
                   {/* Image Right Large */}
                   {variant === 'image-right-large' && (
                     <div className="grid lg:grid-cols-5 gap-8 items-center">
-                      <Card className="lg:col-span-2 p-8 glass-morphism-strong border-primary/20 shadow-[0_0_30px_rgba(212,175,55,0.35),0_0_60px_rgba(212,175,55,0.2),0_0_90px_rgba(212,175,55,0.1)] hover:shadow-[0_0_40px_rgba(212,175,55,0.45),0_0_80px_rgba(212,175,55,0.25),0_0_120px_rgba(212,175,55,0.15)] transition-shadow duration-500">
+                      <Card className="lg:col-span-2 p-8 glass-morphism-strong border-primary/20 shadow-[0_0_20px_rgba(212,175,55,0.15),0_0_40px_rgba(212,175,55,0.1),0_0_60px_rgba(212,175,55,0.05)] hover:shadow-[0_0_25px_rgba(212,175,55,0.2),0_0_50px_rgba(212,175,55,0.12),0_0_75px_rgba(212,175,55,0.08)] transition-shadow duration-500">
                         <h3 className="text-3xl font-bold mb-4 text-gradient-gold text-glow-gold inline-block pb-1">{advantage.title}</h3>
                         <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
                           {advantage.description}
@@ -368,7 +368,7 @@ export default function ForexAdvantages() {
                           ))}
                         </ul>
                       </Card>
-                      <div className="lg:col-span-3 relative h-[450px] rounded-3xl overflow-hidden group">
+                      <div className="lg:col-span-3 relative h-[450px] rounded-3xl overflow-hidden group shadow-[0_0_20px_rgba(212,175,55,0.15),0_0_40px_rgba(212,175,55,0.1),0_0_60px_rgba(212,175,55,0.05)] hover:shadow-[0_0_25px_rgba(212,175,55,0.2),0_0_50px_rgba(212,175,55,0.12),0_0_75px_rgba(212,175,55,0.08)] transition-shadow duration-500">
                         <img 
                           src={advantage.image}
                           alt={advantage.title}
@@ -380,7 +380,7 @@ export default function ForexAdvantages() {
                             <advantage.icon className="w-10 h-10 text-primary" />
                           </div>
                         </div>
-                      </motion.div>
+                      </div>
                     </div>
                   )}
 
@@ -407,7 +407,7 @@ export default function ForexAdvantages() {
                       <motion.div 
                         whileHover={{ scale: 1.03 }}
                         transition={{ duration: 0.5 }}
-                        className="lg:w-[50%] lg:-mr-12 mt-8 lg:mt-0 relative h-[400px] rounded-3xl overflow-hidden group shadow-[0_0_30px_rgba(212,175,55,0.35),0_0_60px_rgba(212,175,55,0.2),0_0_90px_rgba(212,175,55,0.1)] hover:shadow-[0_0_40px_rgba(212,175,55,0.45),0_0_80px_rgba(212,175,55,0.25),0_0_120px_rgba(212,175,55,0.15)] transition-shadow duration-500"
+                        className="lg:w-[50%] lg:-mr-12 mt-8 lg:mt-0 relative h-[400px] rounded-3xl overflow-hidden group shadow-[0_0_20px_rgba(212,175,55,0.15),0_0_40px_rgba(212,175,55,0.1),0_0_60px_rgba(212,175,55,0.05)] hover:shadow-[0_0_25px_rgba(212,175,55,0.2),0_0_50px_rgba(212,175,55,0.12),0_0_75px_rgba(212,175,55,0.08)] transition-shadow duration-500"
                       >
                         <img 
                           src={advantage.image}
@@ -416,7 +416,7 @@ export default function ForexAdvantages() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent"></div>
                         <div className="absolute inset-0 border-2 border-primary/20 rounded-3xl"></div>
-                      </div>
+                      </motion.div>
                     </div>
                   )}
 
@@ -437,7 +437,7 @@ export default function ForexAdvantages() {
                         </div>
                       </Card>
                       <div className="space-y-6">
-                        <div className="relative h-[350px] rounded-3xl overflow-hidden group">
+                        <div className="relative h-[350px] rounded-3xl overflow-hidden group shadow-[0_0_20px_rgba(212,175,55,0.15),0_0_40px_rgba(212,175,55,0.1),0_0_60px_rgba(212,175,55,0.05)] hover:shadow-[0_0_25px_rgba(212,175,55,0.2),0_0_50px_rgba(212,175,55,0.12),0_0_75px_rgba(212,175,55,0.08)] transition-shadow duration-500">
                           <img 
                             src={advantage.image}
                             alt={advantage.title}
@@ -445,7 +445,7 @@ export default function ForexAdvantages() {
                           />
                           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/30 to-black/80"></div>
                           <div className="absolute inset-0 border border-primary/30 rounded-3xl"></div>
-                        </motion.div>
+                        </div>
                         <Card className="p-6 glass-morphism border-primary/20">
                           <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">

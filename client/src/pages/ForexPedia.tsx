@@ -14,10 +14,12 @@ import {
   ArrowDownCircle, Minus, CircleDollarSign, Signal
 } from "lucide-react";
 import { Link } from "wouter";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 export default function ForexPedia() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [openCardIndex, setOpenCardIndex] = useState<number | null>(null);
+  const detailsRefs = useRef<(HTMLDetailsElement | null)[]>([]);
 
   const categories = [
     { 
@@ -229,6 +231,50 @@ export default function ForexPedia() {
     term.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Calculate which row a card is in based on screen size
+  const getRowIndex = (index: number, columns: number) => {
+    return Math.floor(index / columns);
+  };
+
+  // Handle card toggle - close others in same row when a card opens
+  const handleCardToggle = (index: number) => {
+    const clickedDetails = detailsRefs.current[index];
+    
+    if (!clickedDetails) return;
+    
+    // Only proceed if the card is being opened
+    if (!clickedDetails.open) return;
+    
+    const lgColumns = 3;
+    const mdColumns = 2;
+    
+    // Determine which columns to use based on screen width
+    const screenWidth = window.innerWidth;
+    let columns = 1; // mobile default
+    if (screenWidth >= 1024) columns = lgColumns; // lg breakpoint
+    else if (screenWidth >= 768) columns = mdColumns; // md breakpoint
+    
+    const clickedRow = getRowIndex(index, columns);
+    
+    // Close all other cards in the same row
+    filteredTerms.forEach((_, idx) => {
+      const cardRow = getRowIndex(idx, columns);
+      if (cardRow === clickedRow && idx !== index) {
+        const detailsElement = detailsRefs.current[idx];
+        if (detailsElement && detailsElement.open) {
+          detailsElement.open = false;
+        }
+      }
+    });
+    
+    setOpenCardIndex(index);
+  };
+
+  // Update refs array when filteredTerms changes
+  useEffect(() => {
+    detailsRefs.current = detailsRefs.current.slice(0, filteredTerms.length);
+  }, [filteredTerms.length]);
+
   return (
     <div className="min-h-screen bg-background">
       <PublicHeader />
@@ -372,14 +418,18 @@ export default function ForexPedia() {
             {filteredTerms.map((item, index) => (
               <motion.details
                 key={index}
+                ref={(el) => (detailsRefs.current[index] = el)}
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true, margin: "-50px" }}
                 transition={{ duration: 0.4, delay: Math.min(index * 0.02, 0.3) }}
                 whileHover={{ scale: 1.02, y: -4 }}
                 className="glass-morphism-strong border border-primary/20 rounded-2xl p-5 group cursor-pointer hover:border-primary/50 transition-all duration-300 w-full shadow-[0_0_30px_rgba(212,175,55,0.35),0_0_60px_rgba(212,175,55,0.2),0_0_90px_rgba(212,175,55,0.1)] hover:shadow-[0_0_40px_rgba(212,175,55,0.45),0_0_80px_rgba(212,175,55,0.25),0_0_120px_rgba(212,175,55,0.15)] transition-shadow duration-500"
+                onToggle={() => handleCardToggle(index)}
               >
-                <summary className="flex items-start gap-4 text-left font-semibold hover:text-primary transition-colors list-none">
+                <summary 
+                  className="flex items-start gap-4 text-left font-semibold hover:text-primary transition-colors list-none"
+                >
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center flex-shrink-0 animate-pulse-glow">
                     <item.icon className="w-6 h-6 text-primary" />
                   </div>

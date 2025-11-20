@@ -13,9 +13,6 @@ import {
   ArrowRight, Sparkles, Cpu, Network
 } from "lucide-react";
 import { Link } from "wouter";
-import Hero3D from "@/components/Hero3D";
-import AnimatedGrid from "@/components/AnimatedGrid";
-import ParticleField from "@/components/ParticleField";
 import ProductsShowcase from "@/components/ProductsShowcase";
 import CorporateServices from "@/components/CorporateServices";
 import PromoCards from "@/components/PromoCards";
@@ -306,17 +303,10 @@ export default function Home() {
       {/* Enhanced Hero */}
       <div className="relative min-h-screen flex items-center overflow-hidden pt-20">
         {/* Multi-layer background system */}
-        <AnimatedGrid variant="cyber" />
-        <ParticleField count={50} className="opacity-40" />
-        
         <div className="absolute inset-0 bg-gradient-to-br from-black via-background to-background"></div>
         <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-primary/5"></div>
         
-        <div className="absolute inset-0 opacity-20">
-          <Hero3D />
-        </div>
-
-        {/* Accent gradient orbs */}
+        {/* Accent gradient orbs - Light effect */}
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl animate-pulse-glow"></div>
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: "1s" }}></div>
 
