@@ -24,22 +24,25 @@ interface DashboardStats {
 export default function DashboardHome() {
   const [, setLocation] = useLocation();
 
-  // Check verification status
+  // Check verification status - only refetch when tab is visible
   const { data: verificationStatus, isLoading: loadingVerification } = useQuery({
     queryKey: ["/api/documents/verification-status"],
-    refetchInterval: 30000,
+    refetchInterval: 60000, // Increased to 60s
+    refetchIntervalInBackground: false, // Don't refetch when tab is hidden
   });
 
-  // Fetch dashboard stats with real-time updates
+  // Fetch dashboard stats - optimized refetch interval
   const { data: stats, isLoading: loadingStats } = useQuery<DashboardStats>({
     queryKey: ["/api/dashboard/stats"],
-    refetchInterval: 10000, // Refetch every 10 seconds for live data
+    refetchInterval: 30000, // Increased to 30s (was 10s)
+    refetchIntervalInBackground: false, // Don't refetch when tab is hidden
   });
 
-  // Fetch trading accounts with real-time updates
+  // Fetch trading accounts - optimized refetch interval
   const { data: tradingAccounts = [], isLoading: loadingAccounts } = useQuery<TradingAccount[]>({
     queryKey: ["/api/trading-accounts"],
-    refetchInterval: 15000, // Refetch every 15 seconds
+    refetchInterval: 45000, // Increased to 45s (was 15s)
+    refetchIntervalInBackground: false, // Don't refetch when tab is hidden
   });
 
   const columns = [
@@ -205,7 +208,7 @@ export default function DashboardHome() {
             description="Get help from our team"
             icon={Headphones}
             buttonText="Get Support"
-            onClick={() => console.log("Support")}
+            onClick={() => setLocation("/dashboard/support")}
           />
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import { Card } from "@/components/ui/card";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,7 +12,8 @@ interface ForexPair {
   changePercent: number;
 }
 
-export default function LiveForexTicker() {
+// Memoized for better performance
+function LiveForexTicker() {
   const [forexData, setForexData] = useState<ForexPair[]>([
     { symbol: "EURUSD", name: "EUR/USD", bid: 1.0856, ask: 1.0858, change: 0.0012, changePercent: 0.11 },
     { symbol: "GBPUSD", name: "GBP/USD", bid: 1.2634, ask: 1.2636, change: -0.0008, changePercent: -0.06 },
@@ -21,9 +22,44 @@ export default function LiveForexTicker() {
     { symbol: "BTCUSD", name: "BTC/USD", bid: 43250, ask: 43280, change: 450, changePercent: 1.05 },
     { symbol: "ETHUSD", name: "ETH/USD", bid: 2285, ask: 2288, change: -15, changePercent: -0.65 },
   ]);
+  
+  const [isVisible, setIsVisible] = useState(true);
+  const elementRef = useRef<HTMLDivElement>(null);
 
-  // Simulate live price updates
+  // Pause updates when component is off-screen using Intersection Observer
   useEffect(() => {
+    const element = elementRef.current;
+    if (!element) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  // Pause updates when tab is not visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setIsVisible(false);
+      } else {
+        setIsVisible(true);
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
+  // Simulate live price updates - only when visible (huge performance boost)
+  useEffect(() => {
+    if (!isVisible) return;
+
     const interval = setInterval(() => {
       setForexData(prev => prev.map(pair => {
         const volatility = 0.0002;
@@ -41,13 +77,13 @@ export default function LiveForexTicker() {
           changePercent: parseFloat(newChangePercent.toFixed(2)),
         };
       }));
-    }, 3000);
+    }, 5000); // Increased to 5s for better performance (was 3s)
 
     return () => clearInterval(interval);
-  }, []);
+  }, [isVisible]);
 
   return (
-    <Card className="relative overflow-hidden border-primary/30 bg-black/80 backdrop-blur-xl">
+    <Card ref={elementRef} className="relative overflow-hidden border-primary/30 bg-black/80 backdrop-blur-xl">
       {/* Gold accent line */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent" />
       
@@ -132,4 +168,6 @@ export default function LiveForexTicker() {
     </Card>
   );
 }
+
+export default memo(LiveForexTicker);
 

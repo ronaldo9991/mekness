@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { memo, useMemo } from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
 const tickerData = [
@@ -10,23 +10,20 @@ const tickerData = [
   { pair: "USD/CHF", price: "0.8832", change: "+0.05%", up: true },
 ];
 
-export default function LiveTicker() {
-  const duplicatedData = [...tickerData, ...tickerData, ...tickerData];
+// Optimized with CSS animation instead of Framer Motion for better performance
+function LiveTicker() {
+  const duplicatedData = useMemo(() => 
+    [...tickerData, ...tickerData, ...tickerData],
+    []
+  );
   
   return (
     <div className="w-full overflow-hidden bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 border-y border-primary/30">
-      <motion.div
-        className="flex gap-8 py-3"
-        animate={{
-          x: [0, -100 * tickerData.length],
-        }}
-        transition={{
-          x: {
-            repeat: Infinity,
-            repeatType: "loop",
-            duration: 30,
-            ease: "linear",
-          },
+      <div
+        className="flex gap-8 py-3 animate-ticker-scroll"
+        style={{ 
+          willChange: 'transform',
+          transform: 'translateZ(0)', // Force GPU acceleration
         }}
       >
         {duplicatedData.map((item, index) => (
@@ -51,7 +48,9 @@ export default function LiveTicker() {
             </span>
           </div>
         ))}
-      </motion.div>
+      </div>
     </div>
   );
 }
+
+export default memo(LiveTicker);

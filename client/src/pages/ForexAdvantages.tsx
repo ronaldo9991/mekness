@@ -183,7 +183,7 @@ export default function ForexAdvantages() {
               </div>
             </div>
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-12 leading-tight">
-              Advantages of Trading <span className="block mt-6 text-gradient-animated text-glow-gold">Forex</span>
+              Advantages of Trading <span className="block mt-6 text-gradient-animated text-glow-gold inline-block pb-2">Forex</span>
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-3xl mx-auto mb-12">
               Discover why forex is the world's most liquid market and how you can leverage its unique advantages for trading success.
@@ -215,7 +215,7 @@ export default function ForexAdvantages() {
             className="text-center mb-16"
           >
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              The Advantages Forex Markets <span className="text-gradient-gold text-glow-gold">Give You</span>
+              The Advantages Forex Markets <span className="text-gradient-gold text-glow-gold inline-block pb-1">Give You</span>
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Turn the advantages of the world's most liquid market in your favor
@@ -255,9 +255,9 @@ export default function ForexAdvantages() {
                             <advantage.icon className="w-10 h-10 text-primary" />
                           </div>
                         </div>
-                      </div>
-                      <Card className="lg:col-span-2 p-8 glass-morphism-strong border-primary/20 card-hover-3d">
-                        <h3 className="text-3xl font-bold mb-4 text-gradient-gold text-glow-gold">{advantage.title}</h3>
+                      </motion.div>
+                      <Card className="lg:col-span-2 p-8 glass-morphism-strong border-primary/20 shadow-[0_0_30px_rgba(212,175,55,0.35),0_0_60px_rgba(212,175,55,0.2),0_0_90px_rgba(212,175,55,0.1)] hover:shadow-[0_0_40px_rgba(212,175,55,0.45),0_0_80px_rgba(212,175,55,0.25),0_0_120px_rgba(212,175,55,0.15)] transition-shadow duration-500">
+                        <h3 className="text-3xl font-bold mb-4 text-gradient-gold text-glow-gold inline-block pb-1">{advantage.title}</h3>
                         <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
                           {advantage.description}
                         </p>
@@ -282,7 +282,7 @@ export default function ForexAdvantages() {
                         <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center mb-6 animate-pulse-glow">
                           <advantage.icon className="w-8 h-8 text-primary" />
                         </div>
-                        <h3 className="text-3xl font-bold mb-4 text-gradient-gold text-glow-gold">{advantage.title}</h3>
+                        <h3 className="text-3xl font-bold mb-4 text-gradient-gold text-glow-gold inline-block pb-1">{advantage.title}</h3>
                         <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
                           {advantage.description}
                         </p>
@@ -295,7 +295,11 @@ export default function ForexAdvantages() {
                           ))}
                         </ul>
                       </Card>
-                      <div className="lg:w-[50%] lg:-ml-12 mt-8 lg:mt-0 relative h-[400px] rounded-3xl overflow-hidden group">
+                      <motion.div 
+                        whileHover={{ scale: 1.03 }}
+                        transition={{ duration: 0.5 }}
+                        className="lg:w-[50%] lg:-ml-12 mt-8 lg:mt-0 relative h-[400px] rounded-3xl overflow-hidden group shadow-[0_0_30px_rgba(212,175,55,0.35),0_0_60px_rgba(212,175,55,0.2),0_0_90px_rgba(212,175,55,0.1)] hover:shadow-[0_0_40px_rgba(212,175,55,0.45),0_0_80px_rgba(212,175,55,0.25),0_0_120px_rgba(212,175,55,0.15)] transition-shadow duration-500"
+                      >
                         <img 
                           src={advantage.image}
                           alt={advantage.title}
@@ -319,13 +323,13 @@ export default function ForexAdvantages() {
                           />
                           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/30 to-black/80"></div>
                           <div className="absolute inset-0 border border-primary/30 rounded-3xl"></div>
-                        </div>
+                        </motion.div>
                         <Card className="p-6 glass-morphism border-primary/20">
                           <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
                               <advantage.icon className="w-6 h-6 text-primary" />
                             </div>
-                            <h3 className="text-2xl font-bold text-gradient-gold text-glow-gold">{advantage.title}</h3>
+                            <h3 className="text-2xl font-bold text-gradient-gold text-glow-gold inline-block pb-1">{advantage.title}</h3>
                           </div>
                         </Card>
                       </div>
@@ -348,8 +352,8 @@ export default function ForexAdvantages() {
                   {/* Image Right Large */}
                   {variant === 'image-right-large' && (
                     <div className="grid lg:grid-cols-5 gap-8 items-center">
-                      <Card className="lg:col-span-2 p-8 glass-morphism-strong border-primary/20 card-hover-3d">
-                        <h3 className="text-3xl font-bold mb-4 text-gradient-gold text-glow-gold">{advantage.title}</h3>
+                      <Card className="lg:col-span-2 p-8 glass-morphism-strong border-primary/20 shadow-[0_0_30px_rgba(212,175,55,0.35),0_0_60px_rgba(212,175,55,0.2),0_0_90px_rgba(212,175,55,0.1)] hover:shadow-[0_0_40px_rgba(212,175,55,0.45),0_0_80px_rgba(212,175,55,0.25),0_0_120px_rgba(212,175,55,0.15)] transition-shadow duration-500">
+                        <h3 className="text-3xl font-bold mb-4 text-gradient-gold text-glow-gold inline-block pb-1">{advantage.title}</h3>
                         <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
                           {advantage.description}
                         </p>
@@ -376,7 +380,7 @@ export default function ForexAdvantages() {
                             <advantage.icon className="w-10 h-10 text-primary" />
                           </div>
                         </div>
-                      </div>
+                      </motion.div>
                     </div>
                   )}
 
@@ -387,7 +391,7 @@ export default function ForexAdvantages() {
                         <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center mb-6 animate-pulse-glow">
                           <advantage.icon className="w-8 h-8 text-primary" />
                         </div>
-                        <h3 className="text-3xl font-bold mb-4 text-gradient-gold text-glow-gold">{advantage.title}</h3>
+                        <h3 className="text-3xl font-bold mb-4 text-gradient-gold text-glow-gold inline-block pb-1">{advantage.title}</h3>
                         <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
                           {advantage.description}
                         </p>
@@ -400,7 +404,11 @@ export default function ForexAdvantages() {
                           ))}
                         </ul>
                       </Card>
-                      <div className="lg:w-[50%] lg:-mr-12 mt-8 lg:mt-0 relative h-[400px] rounded-3xl overflow-hidden group">
+                      <motion.div 
+                        whileHover={{ scale: 1.03 }}
+                        transition={{ duration: 0.5 }}
+                        className="lg:w-[50%] lg:-mr-12 mt-8 lg:mt-0 relative h-[400px] rounded-3xl overflow-hidden group shadow-[0_0_30px_rgba(212,175,55,0.35),0_0_60px_rgba(212,175,55,0.2),0_0_90px_rgba(212,175,55,0.1)] hover:shadow-[0_0_40px_rgba(212,175,55,0.45),0_0_80px_rgba(212,175,55,0.25),0_0_120px_rgba(212,175,55,0.15)] transition-shadow duration-500"
+                      >
                         <img 
                           src={advantage.image}
                           alt={advantage.title}
@@ -437,13 +445,13 @@ export default function ForexAdvantages() {
                           />
                           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/30 to-black/80"></div>
                           <div className="absolute inset-0 border border-primary/30 rounded-3xl"></div>
-                        </div>
+                        </motion.div>
                         <Card className="p-6 glass-morphism border-primary/20">
                           <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
                               <advantage.icon className="w-6 h-6 text-primary" />
                             </div>
-                            <h3 className="text-2xl font-bold text-gradient-gold text-glow-gold">{advantage.title}</h3>
+                            <h3 className="text-2xl font-bold text-gradient-gold text-glow-gold inline-block pb-1">{advantage.title}</h3>
                           </div>
                         </Card>
                       </div>
@@ -467,7 +475,7 @@ export default function ForexAdvantages() {
             className="text-center mb-16"
           >
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              The Advantages of Forex at <span className="text-gradient-gold text-glow-gold">Mekness</span>
+              The Advantages of Forex at <span className="text-gradient-gold text-glow-gold inline-block pb-1">Mekness</span>
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               We prioritize our investors' needs and support them with superior technology and advantages
@@ -511,7 +519,7 @@ export default function ForexAdvantages() {
               <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/10"></div>
               <div className="relative z-10">
                 <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                  Ready to Experience These <span className="text-gradient-gold text-glow-gold">Advantages</span>?
+                  Ready to Experience These <span className="text-gradient-gold text-glow-gold inline-block pb-1">Advantages</span>?
                 </h2>
                 <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
                   Join thousands of traders who are already benefiting from forex market advantages with Mekness.

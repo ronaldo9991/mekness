@@ -148,7 +148,7 @@ export default function NoDepositBonus() {
             className="text-center mb-16"
           >
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              Why Choose Our <span className="text-gradient-gold">No Deposit Bonus</span>?
+              Why Choose Our <span className="text-gradient-gold inline-block pb-2">No Deposit Bonus</span>?
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Trade risk-free with real money and real market conditions
@@ -233,7 +233,7 @@ export default function NoDepositBonus() {
               transition={{ duration: 0.6 }}
             >
               <Card className="p-8 glass-morphism-strong border-primary/20 h-full">
-                <h3 className="text-2xl font-bold mb-6 text-gradient-gold">Eligibility Criteria</h3>
+                <h3 className="text-2xl font-bold mb-6 text-gradient-gold inline-block pb-2">Eligibility Criteria</h3>
                 <ul className="space-y-3">
                   {eligibility.map((item, index) => (
                     <li key={index} className="flex items-start gap-3">
@@ -316,7 +316,7 @@ export default function NoDepositBonus() {
               <div className="absolute inset-0 bg-gradient-to-br from-neon-green/10 via-transparent to-primary/10"></div>
               <div className="relative z-10">
                 <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                  Ready to Start Trading <span className="text-gradient-gold">Risk-Free</span>?
+                  Ready to Start Trading <span className="text-gradient-gold inline-block pb-2">Risk-Free</span>?
                 </h2>
                 <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
                   Claim your $50 no deposit bonus today. No credit card required, no hidden fees, no risk to your own capital.

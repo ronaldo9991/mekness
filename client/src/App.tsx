@@ -14,6 +14,7 @@ const Home = lazy(() => import("@/pages/Home"));
 const About = lazy(() => import("@/pages/About"));
 const Forex = lazy(() => import("@/pages/Forex"));
 const Contact = lazy(() => import("@/pages/Contact"));
+const Complaints = lazy(() => import("@/pages/Complaints"));
 const SignIn = lazy(() => import("@/pages/SignIn"));
 const SignUp = lazy(() => import("@/pages/SignUp"));
 
@@ -56,6 +57,7 @@ function AppRouter() {
       <Route path="/about" component={About} />
       <Route path="/forex" component={Forex} />
       <Route path="/contact" component={Contact} />
+      <Route path="/complaints" component={Complaints} />
       <Route path="/signin" component={SignIn} />
       <Route path="/signup" component={SignUp} />
       

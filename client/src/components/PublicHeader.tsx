@@ -3,12 +3,14 @@ import { cn } from "@/lib/utils";
 import Logo from "./Logo";
 import { Link, useLocation } from "wouter";
 import { Menu, X, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 export default function PublicHeader() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [forexDropdownOpen, setForexDropdownOpen] = useState(false);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const forexLinks = [
     { label: "What is Forex", href: "/what-is-forex" },
@@ -29,16 +31,45 @@ export default function PublicHeader() {
   const navLinkBase =
     "text-foreground hover:text-primary transition-all duration-300 font-medium text-[15px] relative group py-2";
 
+  // Handle dropdown with delay to prevent accidental closes
+  const handleMouseEnter = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+    setForexDropdownOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    // Add a delay before closing to allow time to move to dropdown
+    closeTimeoutRef.current = setTimeout(() => {
+      setForexDropdownOpen(false);
+    }, 150); // 150ms delay
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 pt-4 px-4">
-      <div className="container mx-auto max-w-7xl">
-        <div className="glass-morphism-strong border border-primary/20 rounded-2xl shadow-2xl neon-gold">
-          <div className="flex items-center justify-between h-16 px-6">
+    <header className="fixed top-0 left-0 right-0 z-50">
+      <div className="w-full">
+        <div 
+          className="bg-black/70 backdrop-blur-[24px] backdrop-saturate-[200%]"
+          style={{ 
+            border: 'none',
+            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.05)'
+          }}
+        >
+          <div className="container mx-auto max-w-7xl flex items-center justify-between h-16 px-6">
           {/* Logo */}
           <Link href="/" className="flex-shrink-0">
-            <div className="transform hover:scale-105 transition-transform duration-300">
-              <Logo size="sm" />
-            </div>
+            <Logo size="lg" />
           </Link>
 
           {/* Desktop Navigation */}
@@ -72,9 +103,10 @@ export default function PublicHeader() {
                 
                 {/* Forex Dropdown */}
                 <div 
+                  ref={dropdownRef}
                   className="relative group"
-                  onMouseEnter={() => setForexDropdownOpen(true)}
-                  onMouseLeave={() => setForexDropdownOpen(false)}
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
                 >
                   <Link
                     href="/forex"
@@ -102,7 +134,12 @@ export default function PublicHeader() {
                   
                   {/* Dropdown Menu */}
                   {forexDropdownOpen && (
-                    <div className="absolute top-full left-0 mt-2 w-72 glass-morphism-strong border border-primary/20 rounded-xl shadow-2xl py-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div 
+                      className="absolute top-full left-0 mt-1 w-72 bg-black/70 backdrop-blur-[24px] backdrop-saturate-[200%] rounded-lg py-2 z-50"
+                      style={{ border: 'none' }}
+                      onMouseEnter={handleMouseEnter}
+                      onMouseLeave={handleMouseLeave}
+                    >
                       {forexLinks.map((link, index) => (
                         <Link
                           key={index}
@@ -172,7 +209,7 @@ export default function PublicHeader() {
 
           {/* Mobile Menu */}
           {mobileMenuOpen && (
-            <div className="lg:hidden py-6 border-t border-primary/20 animate-in slide-in-from-top duration-300">
+            <div className="lg:hidden py-6 animate-in slide-in-from-top duration-300 border-0" style={{ border: 'none' }}>
               <nav className="flex flex-col gap-1">
                 <Link 
                   href="/" 
@@ -239,7 +276,7 @@ export default function PublicHeader() {
                 </Link>
                 
                 {/* Mobile CTA Buttons */}
-                <div className="flex flex-col gap-3 pt-6 mt-4 border-t border-primary/20">
+                <div className="flex flex-col gap-3 pt-6 mt-4">
                   <Link href="/signin" onClick={() => setMobileMenuOpen(false)}>
                     <Button 
                       variant="outline" 

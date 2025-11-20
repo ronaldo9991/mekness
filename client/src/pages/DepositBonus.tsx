@@ -143,7 +143,7 @@ export default function DepositBonus() {
               </div>
             </div>
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-12 leading-tight">
-              <span className="text-gradient-animated text-glow-gold">Deposit Bonus</span>
+              <span className="text-gradient-animated text-glow-gold inline-block pb-2">Deposit Bonus</span>
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-3xl mx-auto mb-12">
               Supercharge your trading account with up to <span className="text-primary font-bold">50% bonus</span> on your first deposit. More capital, more opportunities, more potential profits.
@@ -243,7 +243,7 @@ export default function DepositBonus() {
             className="text-center mb-16"
           >
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              Why Claim a <span className="text-gradient-gold">Deposit Bonus</span>?
+              Why Claim a <span className="text-gradient-gold inline-block pb-2">Deposit Bonus</span>?
             </h2>
           </motion.div>
 
@@ -380,7 +380,7 @@ export default function DepositBonus() {
               <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/10"></div>
               <div className="relative z-10">
                 <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                  Ready to <span className="text-gradient-gold">Boost</span> Your Capital?
+                  Ready to <span className="text-gradient-gold inline-block pb-2">Boost</span> Your Capital?
                 </h2>
                 <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
                   Don't miss this opportunity to maximize your trading potential. Claim your deposit bonus today!

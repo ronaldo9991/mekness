@@ -256,7 +256,7 @@ export default function ForexPedia() {
               </div>
             </div>
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-12 leading-tight">
-              <span className="text-gradient-animated text-glow-gold">ForexPedia</span>
+              <span className="text-gradient-animated text-glow-gold inline-block pb-2">ForexPedia</span>
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-3xl mx-auto mb-12">
               Master forex trading with our comprehensive encyclopedia of trading terms, strategies, and concepts. From basics to advanced techniques.
@@ -295,7 +295,7 @@ export default function ForexPedia() {
             className="text-center mb-12"
           >
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Browse by <span className="text-gradient-gold text-glow-gold">Category</span>
+              Browse by <span className="text-gradient-gold text-glow-gold inline-block pb-1">Category</span>
             </h2>
             <p className="text-xl text-muted-foreground">
               Explore forex topics organized by subject
@@ -311,7 +311,11 @@ export default function ForexPedia() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
               >
-                <div className="group relative h-52 lg:h-56 rounded-3xl overflow-hidden cursor-pointer border border-primary/20 bg-black/40 backdrop-blur-sm transition-all duration-500 hover:border-primary/60 hover:shadow-[0_25px_60px_-15px_rgba(212,175,55,0.45)]">
+                <motion.div 
+                  whileHover={{ scale: 1.03, y: -6 }}
+                  transition={{ duration: 0.5 }}
+                  className="group relative h-52 lg:h-56 rounded-3xl overflow-hidden cursor-pointer border border-primary/20 bg-black/40 backdrop-blur-sm shadow-[0_0_30px_rgba(212,175,55,0.35),0_0_60px_rgba(212,175,55,0.2),0_0_90px_rgba(212,175,55,0.1)] hover:shadow-[0_0_40px_rgba(212,175,55,0.45),0_0_80px_rgba(212,175,55,0.25),0_0_120px_rgba(212,175,55,0.15)] transition-shadow duration-500"
+                >
                   <img 
                     src={category.image}
                     alt={category.name}
@@ -339,7 +343,7 @@ export default function ForexPedia() {
                   <div className="absolute inset-0 pointer-events-none">
                     <div className="absolute inset-0 border border-white/5 rounded-3xl shadow-[inset_0_0_30px_rgba(255,255,255,0.05)]"></div>
                   </div>
-                </div>
+                </motion.div>
               </motion.div>
             ))}
           </div>
@@ -357,7 +361,7 @@ export default function ForexPedia() {
             className="text-center mb-12"
           >
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Forex <span className="text-gradient-gold text-glow-gold">Dictionary</span>
+              Forex <span className="text-gradient-gold text-glow-gold inline-block pb-1">Dictionary</span>
             </h2>
             <p className="text-xl text-muted-foreground">
               {searchTerm ? `${filteredTerms.length} results found` : `${forexTerms.length} essential forex terms`}
@@ -372,14 +376,15 @@ export default function ForexPedia() {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true, margin: "-50px" }}
                 transition={{ duration: 0.4, delay: Math.min(index * 0.02, 0.3) }}
-                className="glass-morphism-strong border border-primary/20 rounded-2xl p-5 group cursor-pointer hover:border-primary/50 transition-all duration-300 w-full card-hover-3d"
+                whileHover={{ scale: 1.02, y: -4 }}
+                className="glass-morphism-strong border border-primary/20 rounded-2xl p-5 group cursor-pointer hover:border-primary/50 transition-all duration-300 w-full shadow-[0_0_30px_rgba(212,175,55,0.35),0_0_60px_rgba(212,175,55,0.2),0_0_90px_rgba(212,175,55,0.1)] hover:shadow-[0_0_40px_rgba(212,175,55,0.45),0_0_80px_rgba(212,175,55,0.25),0_0_120px_rgba(212,175,55,0.15)] transition-shadow duration-500"
               >
                 <summary className="flex items-start gap-4 text-left font-semibold hover:text-primary transition-colors list-none">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center flex-shrink-0 animate-pulse-glow">
                     <item.icon className="w-6 h-6 text-primary" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-lg text-gradient-gold text-glow-gold mb-2 font-bold">{item.term}</div>
+                    <div className="text-lg text-gradient-gold text-glow-gold mb-2 font-bold inline-block pb-1">{item.term}</div>
                     <span className="text-[10px] text-primary bg-primary/10 px-2.5 py-1 rounded-full font-medium">
                       {item.category}
                     </span>
@@ -435,7 +440,7 @@ export default function ForexPedia() {
               <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/10"></div>
               <div className="relative z-10">
                 <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                  Ready to Apply Your <span className="text-gradient-gold text-glow-gold">Knowledge</span>?
+                  Ready to Apply Your <span className="text-gradient-gold text-glow-gold inline-block pb-1">Knowledge</span>?
                 </h2>
                 <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
                   Start trading with confidence using professional tools and resources from Mekness.

@@ -1,52 +1,75 @@
 import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, Activity, BarChart3, Signal } from "lucide-react";
+import { useState } from "react";
 
 export default function TradingPlatformsMockup() {
-  return (
-    <div className="relative h-full flex items-center justify-center py-12">
-      {/* Decorative floating orbs with glow */}
-      <motion.div
-        className="absolute -top-10 -left-10 w-40 h-40 bg-primary/20 rounded-full blur-3xl"
-        animate={{
-          scale: [1, 1.2, 1],
-          opacity: [0.3, 0.6, 0.3],
-          x: [0, 20, 0],
-          y: [0, -20, 0],
-        }}
-        transition={{
-          duration: 6,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      />
-      <motion.div
-        className="absolute -bottom-10 -right-10 w-48 h-48 bg-primary/15 rounded-full blur-3xl"
-        animate={{
-          scale: [1, 1.4, 1],
-          opacity: [0.2, 0.5, 0.2],
-          x: [0, -30, 0],
-          y: [0, 20, 0],
-        }}
-        transition={{
-          duration: 7,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      />
+  const [isHovered, setIsHovered] = useState(false);
 
-      {/* Floating geometric shapes */}
-      <motion.div
-        className="absolute top-20 right-0 w-24 h-24 border-2 border-primary/20 rounded-lg"
-        animate={{
-          rotate: [0, 360],
-          scale: [1, 1.1, 1],
-        }}
-        transition={{
-          duration: 20,
-          repeat: Infinity,
-          ease: "linear",
-        }}
-      />
+  return (
+    <div 
+      className="relative h-full flex items-center justify-center py-12 group"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Static decorative orbs - no animation */}
+      <div className="absolute -top-10 -left-10 w-40 h-40 bg-primary/20 rounded-full blur-3xl opacity-40"></div>
+      <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-primary/15 rounded-full blur-3xl opacity-30"></div>
+
+      {/* Animated orbs only on hover */}
+      {isHovered && (
+        <>
+          <motion.div
+            className="absolute -top-10 -left-10 w-40 h-40 bg-primary/20 rounded-full blur-3xl"
+            initial={{ scale: 1, opacity: 0.3, x: 0, y: 0 }}
+            animate={{
+              scale: [1, 1.2, 1],
+              opacity: [0.3, 0.6, 0.3],
+              x: [0, 20, 0],
+              y: [0, -20, 0],
+            }}
+            transition={{
+              duration: 6,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+          <motion.div
+            className="absolute -bottom-10 -right-10 w-48 h-48 bg-primary/15 rounded-full blur-3xl"
+            initial={{ scale: 1, opacity: 0.2, x: 0, y: 0 }}
+            animate={{
+              scale: [1, 1.4, 1],
+              opacity: [0.2, 0.5, 0.2],
+              x: [0, -30, 0],
+              y: [0, 20, 0],
+            }}
+            transition={{
+              duration: 7,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+        </>
+      )}
+
+      {/* Static geometric shape */}
+      <div className="absolute top-20 right-0 w-24 h-24 border-2 border-primary/20 rounded-lg"></div>
+
+      {/* Animated geometric shape only on hover */}
+      {isHovered && (
+        <motion.div
+          className="absolute top-20 right-0 w-24 h-24 border-2 border-primary/30 rounded-lg"
+          initial={{ rotate: 0, scale: 1 }}
+          animate={{
+            rotate: 360,
+            scale: [1, 1.1, 1],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        />
+      )}
 
       {/* Phone Mockup - More Realistic */}
       <motion.div
@@ -57,12 +80,13 @@ export default function TradingPlatformsMockup() {
         transition={{ duration: 0.8 }}
       >
         <motion.div
-          animate={{
+          initial={{ y: 0 }}
+          animate={isHovered ? {
             y: [0, -15, 0],
-          }}
+          } : { y: 0 }}
           transition={{
             duration: 5,
-            repeat: Infinity,
+            repeat: isHovered ? Infinity : 0,
             ease: "easeInOut",
           }}
         >
@@ -102,8 +126,8 @@ export default function TradingPlatformsMockup() {
                   </div>
                   <motion.div 
                     className="flex items-center gap-1 bg-chart-2/20 px-2 py-1 rounded"
-                    animate={{ scale: [1, 1.05, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
+                    animate={isHovered ? { scale: [1, 1.05, 1] } : { scale: 1 }}
+                    transition={{ duration: 2, repeat: isHovered ? Infinity : 0 }}
                   >
                     <TrendingUp className="w-3 h-3 text-chart-2" />
                     <span className="text-xs text-chart-2 font-semibold">+2.4%</span>
@@ -130,15 +154,15 @@ export default function TradingPlatformsMockup() {
               <div className="absolute top-8 right-6 z-10 space-y-2">
                 <motion.div 
                   className="bg-chart-2 text-white text-[10px] px-2 py-1 rounded-md font-bold shadow-lg"
-                  animate={{ opacity: [0.8, 1, 0.8] }}
-                  transition={{ duration: 2, repeat: Infinity }}
+                  animate={isHovered ? { opacity: [0.8, 1, 0.8] } : { opacity: 1 }}
+                  transition={{ duration: 2, repeat: isHovered ? Infinity : 0 }}
                 >
                   Ask 1.02012
                 </motion.div>
                 <motion.div 
                   className="bg-destructive text-white text-[10px] px-2 py-1 rounded-md font-bold shadow-lg"
-                  animate={{ opacity: [0.8, 1, 0.8] }}
-                  transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+                  animate={isHovered ? { opacity: [0.8, 1, 0.8] } : { opacity: 1 }}
+                  transition={{ duration: 2, repeat: isHovered ? Infinity : 0, delay: 1 }}
                 >
                   Bid 1.00983
                 </motion.div>
@@ -318,8 +342,15 @@ export default function TradingPlatformsMockup() {
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 1 }}
-          animate={{ y: [0, -10, 0] }}
+          animate={isHovered ? { y: [0, -10, 0] } : { y: 0 }}
+          transition={isHovered ? { 
+            y: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+            opacity: { duration: 0.6, delay: 1 },
+            x: { duration: 0.6, delay: 1 }
+          } : { 
+            opacity: { duration: 0.6, delay: 1 },
+            x: { duration: 0.6, delay: 1 }
+          }}
         >
           <div className="text-[10px] text-muted-foreground">Volume</div>
           <div className="text-sm font-bold text-primary">$5.2B</div>
@@ -330,8 +361,15 @@ export default function TradingPlatformsMockup() {
           initial={{ opacity: 0, x: 20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 1.2 }}
-          animate={{ y: [0, 10, 0] }}
+          animate={isHovered ? { y: [0, 10, 0] } : { y: 0 }}
+          transition={isHovered ? { 
+            y: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+            opacity: { duration: 0.6, delay: 1.2 },
+            x: { duration: 0.6, delay: 1.2 }
+          } : { 
+            opacity: { duration: 0.6, delay: 1.2 },
+            x: { duration: 0.6, delay: 1.2 }
+          }}
         >
           <div className="text-[10px] text-muted-foreground">Spread</div>
           <div className="text-sm font-bold text-primary">0.1 pips</div>
@@ -342,8 +380,15 @@ export default function TradingPlatformsMockup() {
           initial={{ opacity: 0, x: 20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 1.4 }}
-          animate={{ y: [0, -8, 0] }}
+          animate={isHovered ? { y: [0, -8, 0] } : { y: 0 }}
+          transition={isHovered ? { 
+            y: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+            opacity: { duration: 0.6, delay: 1.4 },
+            x: { duration: 0.6, delay: 1.4 }
+          } : { 
+            opacity: { duration: 0.6, delay: 1.4 },
+            x: { duration: 0.6, delay: 1.4 }
+          }}
         >
           <div className="flex items-center gap-1">
             <TrendingUp className="w-3 h-3 text-chart-2" />
@@ -351,18 +396,27 @@ export default function TradingPlatformsMockup() {
           </div>
         </motion.div>
 
-        {/* Decorative wireframe elements */}
-        <motion.div
-          className="absolute -top-8 left-10 w-16 h-16 border border-primary/30 rounded-full"
-          animate={{ rotate: 360, scale: [1, 1.1, 1] }}
-          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-        />
-        
-        <motion.div
-          className="absolute bottom-16 -left-8 w-20 h-20 border-2 border-primary/20 rounded-lg"
-          animate={{ rotate: -360 }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        />
+        {/* Static decorative wireframe elements */}
+        <div className="absolute -top-8 left-10 w-16 h-16 border border-primary/30 rounded-full"></div>
+        <div className="absolute bottom-16 -left-8 w-20 h-20 border-2 border-primary/20 rounded-lg"></div>
+
+        {/* Animated wireframe elements only on hover */}
+        {isHovered && (
+          <>
+            <motion.div
+              className="absolute -top-8 left-10 w-16 h-16 border border-primary/40 rounded-full"
+              initial={{ rotate: 0, scale: 1 }}
+              animate={{ rotate: 360, scale: [1, 1.1, 1] }}
+              transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+            />
+            <motion.div
+              className="absolute bottom-16 -left-8 w-20 h-20 border-2 border-primary/30 rounded-lg"
+              initial={{ rotate: 0 }}
+              animate={{ rotate: -360 }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            />
+          </>
+        )}
       </motion.div>
     </div>
   );

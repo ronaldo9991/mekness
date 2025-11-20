@@ -50,7 +50,8 @@ export default function AdminClients() {
 
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
-    refetchInterval: 60000, // Real-time updates every 60 seconds
+    refetchInterval: 120000, // Increased to 120s (2 minutes)
+    refetchIntervalInBackground: false, // Don't refetch when tab is hidden
   });
 
   const sendActivationLinkMutation = useMutation({

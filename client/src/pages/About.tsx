@@ -55,7 +55,7 @@ export default function About() {
       icon: Infinity,
       title: "UNIVERSE IS CHAOS",
       description: "Investing is a lifetime profession and a discipline of constant learning. Markets appear chaotic, yet every turbulent move hides an internal structure. The Mekness philosophy embraces that duality—helping traders decode disorder to find new alpha.",
-      image: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564"
+      image: "/chaos.jpg"
     },
     {
       icon: Brain,
@@ -67,7 +67,7 @@ export default function About() {
       icon: Layers,
       title: "WINNING LOOP",
       description: "Each feedback loop—from strategy testing to post-trade analytics—adds a new layer of intelligence. Mekness platforms hardwire these loops so traders can refine faster and scale smarter.",
-      image: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d"
+      image: "/winning.jpg"
     },
     {
       icon: Palette,
@@ -224,13 +224,13 @@ export default function About() {
                 
                 <div className="relative z-10 space-y-8 text-center">
                   <div className="flex justify-center">
-                    <div className="rounded-2xl border border-primary/30 bg-black/40 px-6 py-4 shadow-[0_0_45px_-10px_rgba(212,175,55,0.6)]">
+                    <div className="rounded-2xl border border-primary/30 bg-black/40 px-6 py-4 shadow-[0_0_40px_-10px_rgba(212,175,55,0.35)]">
                       <Logo className="!gap-2 [&>div]:w-12 [&>div]:h-12" showText />
                     </div>
                   </div>
                   <p className="text-xl md:text-2xl text-foreground leading-relaxed font-light">
                     What began in 2018 as a boutique dealing desk determined to simplify cross-border investing has grown into the
-                    <span className="font-bold text-gradient-gold text-glow-gold"> Mekness ecosystem</span>—a global network of technologists, quants, and market specialists.
+                    <span className="font-bold text-gradient-gold text-glow-gold inline-block pb-2"> Mekness ecosystem</span>—a global network of technologists, quants, and market specialists.
                     We obsess over transforming complex market infrastructure into an experience that feels human, intuitive, and uncompromisingly secure.
                   </p>
                   <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
@@ -278,11 +278,10 @@ export default function About() {
             >
               <div className="relative w-full lg:w-2/5 h-56 lg:h-auto overflow-hidden">
                 <img
-                  src="https://images.unsplash.com/photo-1504386106331-3e4e71712b38?auto=format&fit=crop&w=1600&q=80"
+                  src="/vision.jpg"
                   alt="Mekness vision"
                   className="absolute inset-0 w-full h-full object-cover"
                   loading="lazy"
-                  referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/20 to-transparent"></div>
               </div>
@@ -311,11 +310,10 @@ export default function About() {
             >
               <div className="relative w-full lg:w-2/5 h-56 lg:h-auto overflow-hidden">
                 <img
-                  src="https://images.unsplash.com/photo-1557426272-fc759fdf7a8d?auto=format&fit=crop&w=1600&q=80"
+                  src="/mision.jpg"
                   alt="Mekness mission"
                   className="absolute inset-0 w-full h-full object-cover"
                   loading="lazy"
-                  referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 bg-gradient-to-l from-black/40 via-black/20 to-transparent"></div>
               </div>
@@ -444,7 +442,7 @@ export default function About() {
             viewport={{ once: true }}
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Our <span className="text-gradient-gold text-glow-gold">Journey</span>
+              Our <span className="text-gradient-gold text-glow-gold inline-block pb-2">Journey</span>
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               From humble beginnings to a global leader in forex trading
@@ -622,7 +620,7 @@ export default function About() {
             viewport={{ once: true }}
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-3">
-              Our <span className="text-gradient-gold text-glow-gold">Philosophy</span>
+              Our <span className="text-gradient-gold text-glow-gold inline-block pb-2">Philosophy</span>
             </h2>
             <p className="text-base md:text-lg text-muted-foreground">
               Our perspective on investing is inspired from nature
@@ -644,7 +642,7 @@ export default function About() {
                   className={`flex flex-col ${isReversed ? "lg:flex-row-reverse" : "lg:flex-row"} gap-10 lg:gap-16 items-center`}
                 >
                   {/* Image */}
-                  <div className="relative w-full lg:w-1/2 h-[260px] sm:h-[320px] lg:h-[360px] overflow-hidden rounded-3xl shadow-[0_25px_60px_-25px_rgba(212,175,55,0.45)]">
+                  <div className="relative w-full lg:w-1/2 h-[260px] sm:h-[320px] lg:h-[360px] overflow-hidden rounded-3xl shadow-[0_0_30px_rgba(212,175,55,0.25),0_0_60px_rgba(212,175,55,0.15),0_0_90px_rgba(212,175,55,0.08)] hover:shadow-[0_0_40px_rgba(212,175,55,0.35),0_0_80px_rgba(212,175,55,0.2),0_0_120px_rgba(212,175,55,0.12)] transition-shadow duration-500">
                     <img
                       src={`${item.image}?auto=format&fit=crop&w=1600&q=80`}
                       alt={item.title}
@@ -667,7 +665,7 @@ export default function About() {
                   <div className={`w-full lg:w-1/2 space-y-6 text-center ${isReversed ? "lg:text-right" : "lg:text-left"}`}>
                         <div>
                       <h3 className="text-3xl md:text-4xl font-bold text-foreground">
-                        <span className="bg-gradient-to-r from-primary via-primary/80 to-primary/40 bg-clip-text text-transparent drop-shadow-[0_0_25px_rgba(212,175,55,0.35)]">
+                        <span className="bg-gradient-to-r from-primary via-primary/80 to-primary/40 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(212,175,55,0.25)]">
                                 {item.title}
                               </span>
                             </h3>
@@ -754,7 +752,7 @@ export default function About() {
                   <span className="text-primary font-semibold">right time</span>, and the{' '}
                   <span className="text-primary font-semibold">right decision</span> for investors to make.{' '}
                   We are aware of risks, profit as well as opportunities to earn, and risks of making a loss.{' '}
-                  We deliver the investing, which we, <span className="text-gradient-gold text-glow-gold font-semibold">Mekness family</span>, 
+                  We deliver the investing, which we, <span className="text-gradient-gold text-glow-gold font-semibold inline-block pb-2">Mekness family</span>, 
                   approach as an art, to you, to all investors.
                 </p>
 

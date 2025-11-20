@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LucideIcon } from "lucide-react";
@@ -11,7 +12,8 @@ interface ActionCardProps {
   onClick?: () => void;
 }
 
-export default function ActionCard({
+// Memoized for performance - prevents unnecessary re-renders
+function ActionCard({
   title,
   description,
   icon: Icon,
@@ -51,3 +53,5 @@ export default function ActionCard({
     </motion.div>
   );
 }
+
+export default memo(ActionCard);

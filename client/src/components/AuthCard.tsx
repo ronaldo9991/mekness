@@ -420,23 +420,26 @@ export default function AuthCard({ type = "signup" }: AuthCardProps) {
                       </p>
                     )}
 
-                    <Button
-                      type="submit"
-                      className="w-full bg-gradient-to-r from-primary via-primary/95 to-primary hover:from-primary/90 hover:via-primary/85 hover:to-primary/90 text-black font-bold text-sm shadow-lg shadow-primary/30 hover:shadow-primary/40 transition-all duration-300 disabled:opacity-50 h-11 mt-1"
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          {type === "signin" ? "Signing In..." : "Creating Account..."}
-                        </>
-                      ) : (
-                        <>
-                          {type === "signin" ? "Sign In" : "Create Account"}
-                          <Sparkles className="ml-2 h-4 w-4" />
-                        </>
-                      )}
-                    </Button>
+                    <div className="flex justify-center">
+                      <Button
+                        type="submit"
+                        size="sm"
+                        className="bg-gradient-to-r from-primary via-primary/95 to-primary hover:from-primary/90 hover:via-primary/85 hover:to-primary/90 text-black font-semibold shadow-lg shadow-primary/30 hover:shadow-primary/40 transition-all duration-300 disabled:opacity-50 h-9 px-8 text-[13px] mt-1"
+                        disabled={loading}
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            {type === "signin" ? "Signing In..." : "Creating Account..."}
+                          </>
+                        ) : (
+                          <>
+                            {type === "signin" ? "Sign In" : "Create Account"}
+                            <Sparkles className="ml-2 h-4 w-4" />
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </motion.form>
 
                   {/* Footer Link */}

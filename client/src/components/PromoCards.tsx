@@ -3,8 +3,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, TrendingUp, DollarSign, FileText } from "lucide-react";
 import { Link } from "wouter";
+import { useState } from "react";
 
 export default function PromoCards() {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
@@ -54,6 +57,8 @@ export default function PromoCards() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: index * 0.15 }}
+              onMouseEnter={() => setHoveredIndex(index)}
+              onMouseLeave={() => setHoveredIndex(null)}
             >
               <Card className="group overflow-hidden border-primary/20 hover:border-primary/60 transition-all duration-500 card-hover-3d h-full">
                 {/* Image Section with Diagonal Cut */}
@@ -70,17 +75,25 @@ export default function PromoCards() {
                     <div className="absolute inset-0 flex items-center justify-center">
                       <motion.div
                         className="relative"
-                        animate={{
-                          scale: [1, 1.1, 1],
-                          rotate: [0, 5, -5, 0],
-                        }}
+                        initial={false}
+                        animate={
+                          hoveredIndex === index
+                            ? {
+                                scale: [1, 1.1, 1],
+                                rotate: [0, 5, -5, 0],
+                              }
+                            : {
+                                scale: 1,
+                                rotate: 0,
+                              }
+                        }
                         transition={{
                           duration: 4,
-                          repeat: Infinity,
+                          repeat: hoveredIndex === index ? Infinity : 0,
                           ease: "easeInOut",
                         }}
                       >
-                        <div className="w-32 h-32 bg-primary/10 rounded-full flex items-center justify-center neon-gold backdrop-blur-sm">
+                        <div className="w-32 h-32 bg-primary/10 rounded-full flex items-center justify-center neon-gold">
                           <card.icon className="w-16 h-16 text-primary" />
                         </div>
                         
@@ -90,7 +103,7 @@ export default function PromoCards() {
                       </motion.div>
                     </div>
 
-                    {/* Floating particles */}
+                    {/* Floating particles - Static by default */}
                     {[...Array(3)].map((_, i) => (
                       <motion.div
                         key={i}
@@ -99,13 +112,21 @@ export default function PromoCards() {
                           left: `${20 + i * 30}%`,
                           top: `${30 + i * 20}%`,
                         }}
-                        animate={{
-                          y: [0, -20, 0],
-                          opacity: [0.3, 0.8, 0.3],
-                        }}
+                        initial={false}
+                        animate={
+                          hoveredIndex === index
+                            ? {
+                                y: [0, -20, 0],
+                                opacity: [0.3, 0.8, 0.3],
+                              }
+                            : {
+                                y: 0,
+                                opacity: 0.3,
+                              }
+                        }
                         transition={{
                           duration: 3 + i,
-                          repeat: Infinity,
+                          repeat: hoveredIndex === index ? Infinity : 0,
                           delay: i * 0.5,
                         }}
                       />

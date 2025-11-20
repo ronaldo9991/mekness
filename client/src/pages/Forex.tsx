@@ -140,7 +140,7 @@ export default function Forex() {
             
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-12 leading-tight flex flex-col items-center gap-4">
               <span>Trade in the</span>
-              <span className="text-gradient-gold text-glow-gold">World's Largest</span>
+              <span className="text-gradient-gold text-glow-gold inline-block pb-2">World's Largest</span>
               <span>Market</span>
             </h1>
             <motion.p 
@@ -194,7 +194,7 @@ export default function Forex() {
             viewport={{ once: true }}
           >
             <h2 className="text-3xl md:text-4xl font-bold mb-3">
-              Learn Forex in <span className="text-gradient-gold text-glow-gold">8 Easy Steps</span>
+              Learn Forex in <span className="text-gradient-gold text-glow-gold inline-block pb-1">8 Easy Steps</span>
             </h2>
             <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto">
               Master the fundamentals of forex trading with our comprehensive guide
@@ -237,9 +237,13 @@ export default function Forex() {
                     </motion.div>
 
                     {/* Card */}
-                    <div className="glass-morphism-strong border border-primary/20 rounded-2xl p-6 shadow-2xl relative">
+                    <motion.div 
+                      whileHover={{ scale: 1.02, y: -4 }}
+                      transition={{ duration: 0.3 }}
+                      className="glass-morphism-strong border border-primary/20 rounded-2xl p-6 shadow-[0_0_30px_rgba(212,175,55,0.35),0_0_60px_rgba(212,175,55,0.2),0_0_90px_rgba(212,175,55,0.1)] hover:shadow-[0_0_40px_rgba(212,175,55,0.45),0_0_80px_rgba(212,175,55,0.25),0_0_120px_rgba(212,175,55,0.15)] transition-shadow duration-500 relative"
+                    >
                       <div className="flex items-start justify-between gap-4 mb-4">
-                        <h3 className="text-xl md:text-2xl font-bold uppercase tracking-wide text-gradient-gold text-glow-gold">
+                        <h3 className="text-xl md:text-2xl font-bold uppercase tracking-wide text-gradient-gold text-glow-gold inline-block pb-1">
                           {step.title}
                         </h3>
                         <div className="hidden md:flex items-center gap-2 text-primary font-semibold text-sm">
@@ -256,7 +260,7 @@ export default function Forex() {
                         <div className="w-4 h-0.5 bg-primary/40 rounded-full"></div>
                         <div className="w-1.5 h-1.5 bg-primary/60 rounded-full"></div>
                       </div>
-                    </div>
+                    </motion.div>
                   </div>
 
                   {/* Connector between cards */}
@@ -294,7 +298,7 @@ export default function Forex() {
             viewport={{ once: true }}
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              The <span className="text-gradient-gold text-glow-gold">Advantages</span> That Forex Markets Give
+              The <span className="text-gradient-gold text-glow-gold inline-block pb-1">Advantages</span> That Forex Markets Give
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Turn the advantages of the world's most liquid market in your favor
@@ -375,7 +379,7 @@ export default function Forex() {
             viewport={{ once: true }}
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              The Benefits of Forex in <span className="text-gradient-gold text-glow-gold">Mekness</span>
+              The Benefits of Forex in <span className="text-gradient-gold text-glow-gold inline-block pb-1">Mekness</span>
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               We prioritise our investors' needs and support them with superior technology and advantages
@@ -410,8 +414,8 @@ export default function Forex() {
                   whileInView={{ opacity: 1, y: 0, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.8, delay: index * 0.15, ease: [0.34, 1.56, 0.64, 1] }}
-                  whileHover={{ scale: 1.03, translateY: -6 }}
-                  className="glass-morphism-strong border border-primary/20 rounded-3xl p-8 shadow-2xl h-full flex flex-col transition-transform duration-300"
+                  whileHover={{ scale: 1.05, y: -8 }}
+                  className="glass-morphism-strong border border-primary/20 rounded-3xl p-8 shadow-[0_0_30px_rgba(212,175,55,0.35),0_0_60px_rgba(212,175,55,0.2),0_0_90px_rgba(212,175,55,0.1)] hover:shadow-[0_0_40px_rgba(212,175,55,0.45),0_0_80px_rgba(212,175,55,0.25),0_0_120px_rgba(212,175,55,0.15)] transition-all duration-500 h-full flex flex-col"
                 >
                   <motion.div
                     className="relative inline-flex items-center justify-center mb-6"
@@ -427,7 +431,7 @@ export default function Forex() {
                   <div className="text-sm uppercase tracking-[0.3em] text-primary mb-2 text-center">
                     {benefit.title}
                   </div>
-                  <h3 className="text-xl font-bold text-gradient-gold text-glow-gold text-center mb-4">
+                  <h3 className="text-xl font-bold text-gradient-gold text-glow-gold text-center mb-4 inline-block pb-1">
                     {benefit.heading}
                   </h3>
                   <p className="text-sm md:text-base text-muted-foreground leading-relaxed text-center flex-1">
@@ -456,7 +460,7 @@ export default function Forex() {
             viewport={{ once: true }}
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Deposits, Withdrawals & <span className="text-gradient-gold text-glow-gold">Bonuses</span>
+              Deposits, Withdrawals & <span className="text-gradient-gold text-glow-gold inline-block pb-1">Bonuses</span>
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Easy funding options and exclusive bonus programs
@@ -481,7 +485,7 @@ export default function Forex() {
                   <CreditCard className="w-12 h-12 text-primary" />
                 </div>
               </motion.div>
-              <h3 className="text-xl font-bold mb-3 text-gradient-gold text-glow-gold">Deposits & Withdrawals</h3>
+              <h3 className="text-xl font-bold mb-3 text-gradient-gold text-glow-gold inline-block pb-1">Deposits & Withdrawals</h3>
               <p className="text-muted-foreground leading-relaxed mb-6">
                 Fast, secure, and hassle-free transactions with multiple payment methods
               </p>
@@ -505,7 +509,7 @@ export default function Forex() {
                   <Gift className="w-12 h-12 text-primary" />
                 </div>
               </motion.div>
-              <h3 className="text-xl font-bold mb-3 text-gradient-gold text-glow-gold">Deposit Bonus</h3>
+              <h3 className="text-xl font-bold mb-3 text-gradient-gold text-glow-gold inline-block pb-1">Deposit Bonus</h3>
               <p className="text-muted-foreground leading-relaxed mb-6">
                 Boost your trading capital with our exclusive deposit bonus programs
               </p>
@@ -529,7 +533,7 @@ export default function Forex() {
                   <Download className="w-12 h-12 text-primary" />
                 </div>
               </motion.div>
-              <h3 className="text-xl font-bold mb-3 text-gradient-gold text-glow-gold">Downloads</h3>
+              <h3 className="text-xl font-bold mb-3 text-gradient-gold text-glow-gold inline-block pb-1">Downloads</h3>
               <p className="text-muted-foreground leading-relaxed mb-6">
                 Access trading platforms, tools, and educational resources
               </p>
@@ -550,7 +554,7 @@ export default function Forex() {
           >
             <div className="glass-morphism-strong border-2 border-primary/30 rounded-3xl p-12 md:p-16 neon-gold max-w-4xl mx-auto">
               <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                Ready to Start <span className="text-gradient-gold text-glow-gold">Trading Forex?</span>
+                Ready to Start <span className="text-gradient-gold text-glow-gold inline-block pb-1">Trading Forex?</span>
               </h2>
               <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
                 Join thousands of traders who trust Mekness for their forex trading needs. 

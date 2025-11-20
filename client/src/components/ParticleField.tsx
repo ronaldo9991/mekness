@@ -1,5 +1,4 @@
-import { motion } from "framer-motion";
-import { useMemo } from "react";
+import { memo, useMemo, useState, useEffect } from "react";
 
 interface Particle {
   id: number;
@@ -16,12 +15,25 @@ interface ParticleFieldProps {
   className?: string;
 }
 
-export default function ParticleField({ count = 50, className = "" }: ParticleFieldProps) {
+// Optimized ParticleField with GPU acceleration and reduced overhead
+function ParticleField({ count = 50, className = "" }: ParticleFieldProps) {
+  const [isVisible, setIsVisible] = useState(true);
+
+  // Pause animations when tab is not visible (major performance boost)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsVisible(!document.hidden);
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
   const particles = useMemo(() => {
     const colors = [
-      "rgba(212, 175, 55, 0.6)",  // Gold
-      "rgba(212, 175, 55, 0.5)",  // Gold lighter
-      "rgba(212, 175, 55, 0.4)",  // Gold lightest
+      "rgba(212, 175, 55, 0.6)",
+      "rgba(212, 175, 55, 0.5)",
+      "rgba(212, 175, 55, 0.4)",
     ];
 
     return Array.from({ length: count }, (_, i) => ({
@@ -35,12 +47,17 @@ export default function ParticleField({ count = 50, className = "" }: ParticleFi
     })) as Particle[];
   }, [count]);
 
+  // Only render connection lines for first 10 particles to reduce overhead
+  const connectionLines = useMemo(() => {
+    return particles.slice(0, Math.min(10, particles.length));
+  }, [particles]);
+
   return (
     <div className={`absolute inset-0 overflow-hidden ${className}`}>
       {particles.map((particle) => (
-        <motion.div
+        <div
           key={particle.id}
-          className="absolute rounded-full"
+          className="absolute rounded-full particle-float"
           style={{
             left: `${particle.x}%`,
             top: `${particle.y}%`,
@@ -48,50 +65,36 @@ export default function ParticleField({ count = 50, className = "" }: ParticleFi
             height: `${particle.size}px`,
             backgroundColor: particle.color,
             boxShadow: `0 0 ${particle.size * 2}px ${particle.color}`,
-          }}
-          animate={{
-            y: [0, -100, 0],
-            x: [0, Math.random() * 50 - 25, 0],
-            opacity: [0.2, 1, 0.2],
-            scale: [1, 1.5, 1],
-          }}
-          transition={{
-            duration: particle.duration,
-            repeat: Infinity,
-            delay: particle.delay,
-            ease: "easeInOut",
+            animationDuration: `${particle.duration}s`,
+            animationDelay: `${particle.delay}s`,
+            animationPlayState: isVisible ? 'running' : 'paused',
+            willChange: 'transform, opacity',
+            transform: 'translateZ(0)', // Force GPU acceleration
           }}
         />
       ))}
       
-      {/* Connection lines between nearby particles */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none">
-        {particles.slice(0, Math.min(20, particles.length)).map((particle, i, arr) => {
+      {/* Reduced connection lines - only 10 for performance */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-30">
+        {connectionLines.map((particle, i, arr) => {
           const nextIndex = (i + 1) % arr.length;
           const nextParticle = arr[nextIndex];
           
-          // Safety check to ensure nextParticle exists
           if (!nextParticle) return null;
           
           return (
-            <motion.line
+            <line
               key={`line-${i}`}
               x1={`${particle.x}%`}
               y1={`${particle.y}%`}
               x2={`${nextParticle.x}%`}
               y2={`${nextParticle.y}%`}
-              stroke="rgba(212, 175, 55, 0.1)"
+              stroke="rgba(212, 175, 55, 0.15)"
               strokeWidth="1"
-              initial={{ pathLength: 0, opacity: 0 }}
-              animate={{ 
-                pathLength: [0, 1, 0],
-                opacity: [0, 0.3, 0]
-              }}
-              transition={{
-                duration: 8,
-                repeat: Infinity,
-                delay: i * 0.2,
-                ease: "easeInOut",
+              className="particle-line"
+              style={{
+                animationDelay: `${i * 0.3}s`,
+                animationPlayState: isVisible ? 'running' : 'paused',
               }}
             />
           );
@@ -100,4 +103,6 @@ export default function ParticleField({ count = 50, className = "" }: ParticleFi
     </div>
   );
 }
+
+export default memo(ParticleField);
 

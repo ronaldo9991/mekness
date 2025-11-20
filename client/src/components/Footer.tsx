@@ -27,11 +27,11 @@ const forexLinks = [
 ];
 
 const legalLinks = [
-  { label: "Risk Warning", href: "https://mekness.com/risk-warning", external: true },
-  { label: "Anti Money Laundering", href: "https://mekness.com/anti-money-laundering", external: true },
-  { label: "Privacy Policy", href: "/contact#privacy-policy" },
-  { label: "Terms & Conditions", href: "https://mekness.com/terms-conditions", external: true },
-  { label: "Complaints", href: "https://mekness.com/complaints", external: true },
+  { label: "Risk Warning", href: "/risk_disclosure_and_warning_notice.pdf", external: true },
+  { label: "Anti Money Laundering", href: "/anti_money_laundering.pdf", external: true },
+  { label: "Privacy Policy", href: "/privacy_agreement.pdf", external: true },
+  { label: "Terms & Conditions", href: "/terms_conditions.pdf", external: true },
+  { label: "Complaints", href: "/complaints" },
 ];
 
 export default function Footer() {
@@ -151,12 +151,16 @@ export default function Footer() {
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/30">
                   <Phone className="w-4 h-4 text-primary" />
                 </div>
-                <div>
-                  <p className="text-foreground font-medium">+971 43 88 4268</p>
-                  <p className="text-xs">+971 54 719 9005</p>
+                <div className="flex flex-col gap-1">
+                  <a href="tel:+97143884268" className="text-foreground font-medium hover:text-primary transition-colors">
+                    +971 43 88 4268
+                  </a>
+                  <a href="tel:+971547199005" className="text-xs hover:text-primary transition-colors">
+                    +971 54 719 9005
+                  </a>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/30">
                   <Mail className="w-4 h-4 text-primary" />
                 </div>
@@ -168,10 +172,15 @@ export default function Footer() {
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/30">
                   <MapPin className="w-4 h-4 text-primary" />
                 </div>
-                <div className="text-xs leading-relaxed">
+                <a 
+                  href="https://www.google.com/maps/search/?api=1&query=Office+202+Blue+Tower+Sheikh+Zayed+Road+United+Arab+Emirates"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs leading-relaxed hover:text-primary transition-colors cursor-pointer"
+                >
                   Office 202, Blue Tower
                   <br /> Sheikh Zayed Road, United Arab Emirates
-                </div>
+                </a>
               </div>
             </div>
           </div>

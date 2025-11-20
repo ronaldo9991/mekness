@@ -214,7 +214,7 @@ export default function DepositsWithdrawals() {
             className="text-center mb-16"
           >
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              Payment <span className="text-gradient-gold">Methods</span>
+              Payment <span className="text-gradient-gold inline-block pb-2">Methods</span>
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Choose from a wide range of secure payment options tailored to your preferences.
@@ -299,7 +299,7 @@ export default function DepositsWithdrawals() {
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
                     <ArrowRight className="w-6 h-6 text-primary rotate-[-90deg]" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gradient-gold">Making a Deposit</h3>
+                  <h3 className="text-2xl font-bold text-gradient-gold inline-block pb-2">Making a Deposit</h3>
                 </div>
                 <ol className="space-y-4">
                   {depositSteps.map((step, index) => (
@@ -333,7 +333,7 @@ export default function DepositsWithdrawals() {
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
                     <ArrowRight className="w-6 h-6 text-primary rotate-[90deg]" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gradient-gold">Making a Withdrawal</h3>
+                  <h3 className="text-2xl font-bold text-gradient-gold inline-block pb-2">Making a Withdrawal</h3>
                 </div>
                 <ol className="space-y-4">
                   {withdrawalSteps.map((step, index) => (

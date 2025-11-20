@@ -239,6 +239,19 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-serif;
   }
+
+  /* Custom Text Selection - Mekness Gold Brand Color */
+  ::selection {
+    background-color: rgba(212, 175, 55, 0.3);
+    color: #ffffff;
+    text-shadow: none;
+  }
+
+  ::-moz-selection {
+    background-color: rgba(212, 175, 55, 0.3);
+    color: #ffffff;
+    text-shadow: none;
+  }
 }
 
 @layer utilities {
@@ -451,6 +464,90 @@
     100% {
       background-position: 50px 50px, 50px 50px;
     }
+  }
+
+  /* OPTIMIZED CSS animations for background orbs - GPU accelerated */
+  @keyframes floatOrb1 {
+    0%, 100% {
+      transform: translate3d(0, 0, 0) scale(1);
+      opacity: 0.3;
+    }
+    50% {
+      transform: translate3d(50px, -30px, 0) scale(1.2);
+      opacity: 0.5;
+    }
+  }
+
+  @keyframes floatOrb2 {
+    0%, 100% {
+      transform: translate3d(0, 0, 0) scale(1);
+      opacity: 0.2;
+    }
+    50% {
+      transform: translate3d(-50px, 30px, 0) scale(1.3);
+      opacity: 0.4;
+    }
+  }
+
+  @keyframes floatOrb3 {
+    0%, 100% {
+      transform: translate3d(0, 0, 0) scale(1);
+      opacity: 0.2;
+    }
+    50% {
+      transform: translate3d(40px, -40px, 0) scale(1.4);
+      opacity: 0.6;
+    }
+  }
+
+  /* Apply animations to classes */
+  .animate-float-orb-1 {
+    animation: floatOrb1 8s ease-in-out infinite;
+  }
+
+  .animate-float-orb-2 {
+    animation: floatOrb2 10s ease-in-out infinite;
+  }
+
+  .animate-float-orb-3 {
+    animation: floatOrb3 12s ease-in-out infinite;
+  }
+
+  /* OPTIMIZED particle float animation - GPU accelerated */
+  @keyframes floatParticle {
+    0% {
+      transform: translate3d(0, 0, 0);
+      opacity: 0.2;
+    }
+    50% {
+      transform: translate3d(0, -100px, 0);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(0, 0);
+      opacity: 0.2;
+    }
+  }
+
+  .animate-float-orb-1 {
+    animation: floatOrb1 8s ease-in-out infinite;
+  }
+
+  .animate-float-orb-2 {
+    animation: floatOrb2 10s ease-in-out infinite;
+  }
+
+  .animate-float-orb-3 {
+    animation: floatOrb3 12s ease-in-out infinite;
+  }
+
+  .animate-float-particle {
+    animation: floatParticle ease-in-out infinite;
+  }
+
+  /* Perspective for 3D card stacking */
+  .perspective-1000 {
+    perspective: 1000px;
   }
 
   /* Enhanced Glassmorphism */
@@ -792,5 +889,155 @@
     50% {
       background-position: 100% 50%;
     }
+  }
+
+  /* ========== PERFORMANCE OPTIMIZED ANIMATIONS ========== */
+  
+  /* Particle Float Animation - GPU Accelerated */
+  .particle-float {
+    animation: particleFloat ease-in-out infinite;
+  }
+
+  @keyframes particleFloat {
+    0%, 100% {
+      transform: translate3d(0, 0, 0) scale(1);
+      opacity: 0.2;
+    }
+    50% {
+      transform: translate3d(0, -100px, 0) scale(1.5);
+      opacity: 1;
+    }
+  }
+
+  /* Particle Line Animation */
+  .particle-line {
+    animation: particleLine 8s ease-in-out infinite;
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+  }
+
+  @keyframes particleLine {
+    0%, 100% {
+      stroke-dashoffset: 100;
+      opacity: 0;
+    }
+    50% {
+      stroke-dashoffset: 0;
+      opacity: 0.3;
+    }
+  }
+
+  /* Ticker Scroll Animation - GPU Accelerated */
+  .animate-ticker-scroll {
+    animation: tickerScroll 30s linear infinite;
+  }
+
+  @keyframes tickerScroll {
+    0% {
+      transform: translate3d(0, 0, 0);
+    }
+    100% {
+      transform: translate3d(-33.333%, 0, 0);
+    }
+  }
+
+  /* 3D Spin Animation - GPU Accelerated */
+  .animate-spin-3d {
+    animation: spin3d 8s linear infinite;
+  }
+
+  @keyframes spin3d {
+    0% {
+      transform: translate3d(0, 0, 50px) rotateX(0deg) rotateY(0deg);
+    }
+    100% {
+      transform: translate3d(0, 0, 50px) rotateX(360deg) rotateY(360deg);
+    }
+  }
+
+  /* Orbit Animation - GPU Accelerated */
+  .animate-orbit {
+    animation: orbit 10s linear infinite;
+  }
+
+  @keyframes orbit {
+    0% {
+      transform: translate3d(-50%, -50%, 0) rotate(0deg) translateX(80px) rotate(0deg) scale(1);
+    }
+    50% {
+      transform: translate3d(-50%, -50%, 0) rotate(180deg) translateX(80px) rotate(-180deg) scale(1.2);
+    }
+    100% {
+      transform: translate3d(-50%, -50%, 0) rotate(360deg) translateX(80px) rotate(-360deg) scale(1);
+    }
+  }
+
+  /* Pulse Glow Center Animation */
+  .animate-pulse-glow-center {
+    animation: pulseGlowCenter 4s ease-in-out infinite;
+  }
+
+  @keyframes pulseGlowCenter {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 0.3;
+    }
+    50% {
+      transform: scale(1.5);
+      opacity: 0.6;
+    }
+  }
+
+  /* Reduce motion for users who prefer it */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+
+    .animate-float-orb-1,
+    .animate-float-orb-2,
+    .animate-float-orb-3,
+    .particle-float,
+    .animate-ticker-scroll,
+    .animate-spin-3d,
+    .animate-orbit,
+    .animate-pulse-glow-center {
+      animation: none !important;
+    }
+  }
+
+  /* Performance: Force GPU acceleration for common animated elements */
+  .particle-float,
+  .animate-float-orb-1,
+  .animate-float-orb-2,
+  .animate-float-orb-3,
+  .animate-ticker-scroll,
+  .animate-spin-3d,
+  .animate-orbit {
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+
+  /* Optimize blur effects - reduce for better performance */
+  .blur-3xl {
+    filter: blur(48px);
+  }
+
+  .blur-2xl {
+    filter: blur(32px);
+  }
+
+  /* Text gold glow - optimized */
+  .text-glow-gold {
+    text-shadow: 
+      0 0 10px rgba(212, 175, 55, 0.5),
+      0 0 20px rgba(212, 175, 55, 0.3);
   }
 }

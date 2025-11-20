@@ -187,7 +187,7 @@ export default function IntroducingBroker() {
               </div>
             </div>
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-12 leading-tight">
-              Become an <span className="block mt-6 text-gradient-animated text-glow-gold">Introducing Broker</span>
+              Become an <span className="block mt-6 text-gradient-animated text-glow-gold inline-block pb-2">Introducing Broker</span>
             </h1>
             <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-3xl mx-auto mb-12">
               Partner with Mekness and earn industry-leading commissions. Refer traders, build your network, and create a sustainable revenue stream with up to <span className="text-primary font-bold">$15 per lot</span>.
@@ -219,7 +219,7 @@ export default function IntroducingBroker() {
             className="text-center mb-16"
           >
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              Why Partner with <span className="text-gradient-gold">Mekness</span>
+              Why Partner with <span className="text-gradient-gold inline-block pb-2">Mekness</span>
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Industry-leading benefits designed to maximize your earning potential and support your growth.
@@ -370,7 +370,7 @@ export default function IntroducingBroker() {
             className="text-center mb-12"
           >
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              Frequently Asked <span className="text-gradient-gold">Questions</span>
+              Frequently Asked <span className="text-gradient-gold inline-block pb-2">Questions</span>
             </h2>
           </motion.div>
 
@@ -410,7 +410,7 @@ export default function IntroducingBroker() {
               <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/10"></div>
               <div className="relative z-10">
                 <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                  Ready to Start <span className="text-gradient-gold">Earning</span>?
+                  Ready to Start <span className="text-gradient-gold inline-block pb-2">Earning</span>?
                 </h2>
                 <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
                   Join 2,500+ active IBs worldwide. Apply today and start building your commission stream with Mekness.

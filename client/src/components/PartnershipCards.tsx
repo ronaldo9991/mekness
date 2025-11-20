@@ -3,8 +3,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, TrendingUp, Droplet, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
+import { useState } from "react";
 
 export default function PartnershipCards() {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
   const partnerships = [
     {
       icon: Users,
@@ -88,6 +91,8 @@ export default function PartnershipCards() {
                 delay: index * 0.15,
                 ease: [0.34, 1.56, 0.64, 1]
               }}
+              onMouseEnter={() => setHoveredIndex(index)}
+              onMouseLeave={() => setHoveredIndex(null)}
             >
               <Card className="group border border-border hover:border-primary/60 card-hover-3d overflow-hidden flex flex-col h-full">
                 {/* Icon/Logo Square Section with Illustrations */}
@@ -100,33 +105,49 @@ export default function PartnershipCards() {
                     <partner.icon className="w-8 h-8 text-foreground" />
                   </div>
 
-                  {/* Decorative animated circles */}
-                  <motion.div
-                    className="absolute top-1/2 left-1/2 w-32 h-32 border border-primary/20 rounded-full"
+                  {/* Static decorative circles - no animation */}
+                  <div
+                    className="absolute top-1/2 left-1/2 w-32 h-32 border border-primary/20 rounded-full opacity-30"
                     style={{ transform: 'translate(-50%, -50%)' }}
-                    animate={{
-                      scale: [1, 1.2, 1],
-                      opacity: [0.2, 0.4, 0.2],
-                    }}
-                    transition={{
-                      duration: 4,
-                      repeat: Infinity,
-                      delay: index * 0.5,
-                    }}
                   />
-                  <motion.div
-                    className="absolute top-1/2 left-1/2 w-24 h-24 border border-primary/30 rounded-full"
+                  <div
+                    className="absolute top-1/2 left-1/2 w-24 h-24 border border-primary/30 rounded-full opacity-45"
                     style={{ transform: 'translate(-50%, -50%)' }}
-                    animate={{
-                      scale: [1, 1.3, 1],
-                      opacity: [0.3, 0.6, 0.3],
-                    }}
-                    transition={{
-                      duration: 3,
-                      repeat: Infinity,
-                      delay: index * 0.3,
-                    }}
                   />
+
+                  {/* Animated decorative circles only on hover */}
+                  {hoveredIndex === index && (
+                    <>
+                      <motion.div
+                        className="absolute top-1/2 left-1/2 w-32 h-32 border border-primary/30 rounded-full"
+                        style={{ transform: 'translate(-50%, -50%)' }}
+                        initial={{ scale: 1, opacity: 0.2 }}
+                        animate={{
+                          scale: [1, 1.2, 1],
+                          opacity: [0.2, 0.4, 0.2],
+                        }}
+                        transition={{
+                          duration: 4,
+                          repeat: Infinity,
+                          delay: index * 0.5,
+                        }}
+                      />
+                      <motion.div
+                        className="absolute top-1/2 left-1/2 w-24 h-24 border border-primary/40 rounded-full"
+                        style={{ transform: 'translate(-50%, -50%)' }}
+                        initial={{ scale: 1, opacity: 0.3 }}
+                        animate={{
+                          scale: [1, 1.3, 1],
+                          opacity: [0.3, 0.6, 0.3],
+                        }}
+                        transition={{
+                          duration: 3,
+                          repeat: Infinity,
+                          delay: index * 0.3,
+                        }}
+                      />
+                    </>
+                  )}
 
                   {/* Center text (if exists) */}
                   {partner.label && (
@@ -156,7 +177,7 @@ export default function PartnershipCards() {
                   <div className="absolute bottom-4 left-4 w-12 h-12 border-l-2 border-b-2 border-primary/20"></div>
                   <div className="absolute top-4 right-12 w-8 h-8 border-t-2 border-r-2 border-primary/20"></div>
                   
-                  {/* Floating particles */}
+                  {/* Floating particles - Static by default, animate on hover */}
                   {[...Array(5)].map((_, i) => (
                     <motion.div
                       key={i}
@@ -165,14 +186,23 @@ export default function PartnershipCards() {
                         left: `${15 + i * 18}%`,
                         top: `${20 + i * 15}%`,
                       }}
-                      animate={{
-                        y: [0, -15, 0],
-                        opacity: [0.3, 1, 0.3],
-                        scale: [1, 1.5, 1],
-                      }}
+                      initial={false}
+                      animate={
+                        hoveredIndex === index
+                          ? {
+                              y: [0, -15, 0],
+                              opacity: [0.3, 1, 0.3],
+                              scale: [1, 1.5, 1],
+                            }
+                          : {
+                              y: 0,
+                              opacity: 0.3,
+                              scale: 1,
+                            }
+                      }
                       transition={{
                         duration: 2 + i * 0.5,
-                        repeat: Infinity,
+                        repeat: hoveredIndex === index ? Infinity : 0,
                         delay: i * 0.3,
                       }}
                     />

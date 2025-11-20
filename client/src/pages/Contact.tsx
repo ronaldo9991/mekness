@@ -142,7 +142,7 @@ export default function Contact() {
               className="space-y-8"
             >
               <div className="glass-morphism-strong border border-primary/20 rounded-3xl p-8 shadow-2xl">
-                <h2 className="text-2xl font-bold mb-6 text-gradient-gold text-glow-gold">
+                <h2 className="text-2xl font-bold mb-6 text-gradient-gold text-glow-gold inline-block pb-2">
                   Direct Support
                 </h2>
                 <div className="space-y-6">
@@ -161,7 +161,15 @@ export default function Contact() {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Phone Support</p>
-                      <p className="font-semibold">+971 54 719 9005 • +971 43 88 4268</p>
+                      <p className="font-semibold">
+                        <a href="tel:+971547199005" className="hover:text-primary transition-colors">
+                          +971 54 719 9005
+                        </a>
+                        {" • "}
+                        <a href="tel:+97143884268" className="hover:text-primary transition-colors">
+                          +971 43 88 4268
+                        </a>
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-start gap-4">
@@ -170,7 +178,9 @@ export default function Contact() {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Email</p>
-                      <p className="font-semibold">support@mekness.com</p>
+                      <a href="mailto:support@mekness.com" className="font-semibold hover:text-primary transition-colors">
+                        support@mekness.com
+                      </a>
                     </div>
                   </div>
                 </div>
@@ -185,15 +195,29 @@ export default function Contact() {
                     <p className="font-semibold text-foreground mb-1 flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-primary" /> Registered Office
                     </p>
-                    <p>Ground Floor, The Sotheby Building, Rodney Village,</p>
-                    <p>Rodney Bay, Gros-Islet, Saint Lucia</p>
+                    <a 
+                      href="https://www.google.com/maps/search/?api=1&query=Ground+Floor+The+Sotheby+Building+Rodney+Village+Rodney+Bay+Gros+Islet+Saint+Lucia"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-primary transition-colors cursor-pointer"
+                    >
+                      <p>Ground Floor, The Sotheby Building, Rodney Village,</p>
+                      <p>Rodney Bay, Gros-Islet, Saint Lucia</p>
+                    </a>
                   </div>
                   <div>
                     <p className="font-semibold text-foreground mb-1 flex items-center gap-2">
                       <Globe className="w-4 h-4 text-primary" /> Operational Office
                     </p>
-                    <p>Office 202, Blue Tower, Sheikh Zayed Road,</p>
-                    <p>Dubai, United Arab Emirates</p>
+                    <a 
+                      href="https://www.google.com/maps/search/?api=1&query=Office+202+Blue+Tower+Sheikh+Zayed+Road+Dubai+United+Arab+Emirates"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-primary transition-colors cursor-pointer"
+                    >
+                      <p>Office 202, Blue Tower, Sheikh Zayed Road,</p>
+                      <p>Dubai, United Arab Emirates</p>
+                    </a>
                   </div>
                   <div className="flex items-start gap-4 pt-2">
                     <Clock className="w-5 h-5 text-primary flex-shrink-0" />
@@ -319,7 +343,7 @@ export default function Contact() {
                     <Shield className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h4 className="text-lg font-semibold text-gradient-gold text-glow-gold">Privacy Policy</h4>
+                    <h4 className="text-lg font-semibold text-gradient-gold text-glow-gold inline-block pb-2">Privacy Policy</h4>
                     <p className="text-sm text-muted-foreground">How we protect and use your personal information</p>
                   </div>
                 </div>

@@ -83,7 +83,7 @@ export default function DownloadsSection() {
           </p>
         </motion.div>
 
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 max-w-7xl mx-auto">
           {downloadOptions.map((option, index) => (
             <motion.div
               key={option.title}
@@ -91,20 +91,21 @@ export default function DownloadsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
+              whileHover={{ scale: 1.03, y: -5 }}
             >
-              <Card className="glass-morphism-strong border border-primary/20 rounded-3xl p-6 flex flex-col gap-6 h-full">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="text-left space-y-2">
-                    <h3 className="text-lg font-semibold text-foreground">{option.title}</h3>
+              <Card className="glass-morphism-strong border border-primary/20 rounded-3xl p-6 flex flex-col gap-6 h-full shadow-[0_0_40px_-5px_rgba(212,175,55,0.4)] hover:shadow-[0_0_60px_-5px_rgba(212,175,55,0.6)] transition-shadow duration-500">
+                <div className="flex items-start justify-between gap-4 flex-1">
+                  <div className="text-left space-y-2 flex-1">
+                    <h3 className="text-lg md:text-xl font-semibold text-foreground leading-tight">{option.title}</h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">
                       {option.description}
                     </p>
                   </div>
-                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/30 flex-shrink-0">
-                    <option.icon className="w-6 h-6 text-primary" />
+                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/30 flex-shrink-0 shadow-lg">
+                    <option.icon className="w-7 h-7 text-primary" />
                   </div>
                 </div>
-                <Button asChild className="neon-gold w-full">
+                <Button asChild className="neon-gold w-full h-12 text-base font-semibold">
                   <a href={option.href} target="_blank" rel="noreferrer">
                     {option.cta}
                   </a>
@@ -120,10 +121,12 @@ export default function DownloadsSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <h3 className="text-center text-2xl font-semibold text-gradient-gold text-glow-gold mb-8">
-            Scan to Download Mobile Apps
-          </h3>
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="text-center mb-8">
+            <h3 className="text-2xl font-semibold text-gradient-gold text-glow-gold inline-block pb-2">
+              Scan to Download Mobile Apps
+            </h3>
+          </div>
+          <div className="grid gap-6 md:grid-cols-3 max-w-5xl mx-auto">
             {qrCodes.map((qr, index) => (
               <motion.div
                 key={qr.title}
@@ -131,14 +134,15 @@ export default function DownloadsSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
+                whileHover={{ scale: 1.05, y: -8 }}
               >
-                <Card className="glass-morphism border border-primary/20 rounded-3xl p-6 flex flex-col gap-4 items-center text-center">
+                <Card className="glass-morphism border border-primary/20 rounded-3xl p-6 flex flex-col gap-4 items-center text-center h-full shadow-[0_0_40px_-5px_rgba(212,175,55,0.4)] hover:shadow-[0_0_60px_-5px_rgba(212,175,55,0.6)] transition-shadow duration-500">
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-xs font-semibold uppercase tracking-wider text-primary">
                     <QrCode className="w-4 h-4" />
                     {qr.title}
                   </div>
-                  <div className="w-36 h-36 bg-white rounded-2xl flex items-center justify-center shadow-lg">
-                    <img src={qr.image} alt={qr.description} className="w-32 h-32 object-contain" />
+                  <div className="w-40 h-40 bg-white rounded-2xl flex items-center justify-center shadow-lg">
+                    <img src={qr.image} alt={qr.description} className="w-36 h-36 object-contain" />
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     {qr.description}

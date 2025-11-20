@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Card } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { LucideIcon } from "lucide-react";
@@ -9,7 +10,8 @@ interface StatCardProps {
   index?: number;
 }
 
-export default function StatCard({ title, value, icon: Icon, index = 0 }: StatCardProps) {
+// Memoized for performance - prevents unnecessary re-renders
+function StatCard({ title, value, icon: Icon, index = 0 }: StatCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -52,3 +54,5 @@ export default function StatCard({ title, value, icon: Icon, index = 0 }: StatCa
     </motion.div>
   );
 }
+
+export default memo(StatCard);

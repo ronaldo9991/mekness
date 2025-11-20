@@ -24,10 +24,11 @@ export default function TradingAccounts() {
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
 
-  // Fetch trading accounts with real-time updates
+  // Fetch trading accounts - optimized refetch interval
   const { data: accounts = [], isLoading } = useQuery<TradingAccount[]>({
     queryKey: ["/api/trading-accounts"],
-    refetchInterval: 15000, // Refetch every 15 seconds
+    refetchInterval: 45000, // Increased to 45s (was 15s)
+    refetchIntervalInBackground: false, // Don't refetch when tab is hidden
   });
 
   // Create account mutation

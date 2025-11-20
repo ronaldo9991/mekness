@@ -50,7 +50,7 @@ export default function TradingContest() {
               </div>
             </div>
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-12 leading-tight">
-              Mekness <span className="block mt-6 text-gradient-animated text-glow-gold">Trading Contest</span>
+              Mekness <span className="block mt-6 text-gradient-animated text-glow-gold inline-block pb-2">Trading Contest</span>
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-3xl mx-auto mb-12">
               Compete with traders worldwide for a <span className="text-primary font-bold">$125,000 prize pool</span>. Showcase your skills, climb the leaderboard, and win big.
@@ -158,7 +158,7 @@ export default function TradingContest() {
           >
             <Card className="glass-morphism-strong border-primary/20 p-8 md:p-12 text-center">
               <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                Ready to <span className="text-gradient-gold">Compete</span>?
+                Ready to <span className="text-gradient-gold inline-block pb-2">Compete</span>?
               </h2>
               <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
                 Join hundreds of traders competing for $125,000 in prizes. Register now and start climbing the leaderboard.
