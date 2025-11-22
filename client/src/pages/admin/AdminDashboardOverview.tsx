@@ -78,7 +78,9 @@ export default function AdminDashboardOverview({ admin }: AdminDashboardOverview
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-1">
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
-                  Welcome back, {admin.fullName}
+                  {admin.role === "super_admin" && "Welcome back Super Admin"}
+                  {admin.role === "middle_admin" && "Welcome back Middle Admin"}
+                  {admin.role === "normal_admin" && "Welcome back Normal Admin"}
                 </h1>
                 <span className={`text-xs font-bold px-3 py-1 rounded-full bg-gradient-to-r ${getRoleColor(admin.role)} text-white uppercase tracking-wider`}>
                   {getRoleLabel(admin.role)}
@@ -87,6 +89,9 @@ export default function AdminDashboardOverview({ admin }: AdminDashboardOverview
               <p className="text-muted-foreground flex items-center gap-2">
                 <Activity className="w-4 h-4 text-primary animate-pulse" />
                 System Overview • Real-time Monitoring • All metrics updating live
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {admin.fullName} • {admin.email}
               </p>
             </div>
           </div>

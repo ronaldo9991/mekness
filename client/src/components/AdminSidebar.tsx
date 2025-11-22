@@ -76,9 +76,10 @@ export default function AdminSidebar({ admin }: AdminSidebarProps) {
       { title: "Logs", icon: Activity, url: "/admin/logs", badge: null },
     ];
 
-    // Super admin gets all items
+    // Super admin gets additional items
     if (admin.role === "super_admin") {
-      baseItems.push({ title: "Create Admins", icon: Shield, url: "/admin/create-admins", badge: null });
+      // Insert Create Admins near the top for visibility
+      baseItems.splice(1, 0, { title: "Create Admins", icon: Shield, url: "/admin/create-admins", badge: null });
       baseItems.push({ title: "Admin Management", icon: Users, url: "/admin/admins", badge: null });
     }
 
