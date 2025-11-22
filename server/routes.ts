@@ -1506,9 +1506,26 @@ export async function registerRoutes(app: Express): Promise<void> {
       // Log activity
       await logActivity(admin.id, "signin", "admin", admin.id, "Admin signed in");
 
-      // Return admin without password
+      // Debug: Log admin object from database
+      console.log("[API /admin/auth/signin] Admin from database:", {
+        id: admin.id,
+        username: admin.username,
+        email: admin.email,
+        role: admin.role,
+        roleType: typeof admin.role,
+        hasRole: 'role' in admin,
+        allKeys: Object.keys(admin),
+      });
+
+      // Return admin without password - ensure role is included
       const { password: _, ...adminWithoutPassword } = admin;
-      res.json({ admin: adminWithoutPassword });
+      const adminResponse = {
+        ...adminWithoutPassword,
+        role: admin.role || "normal_admin", // Fallback if role is missing
+      };
+      
+      console.log("[API /admin/auth/signin] Sending admin response with role:", adminResponse.role);
+      res.json({ admin: adminResponse });
     } catch (error) {
       console.error("Admin signin error:", error);
       res.status(500).json({ message: "Failed to sign in" });
@@ -1541,9 +1558,37 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(404).json({ message: "Admin not found" });
       }
 
+      // Debug logging to see what we're getting from database
+      console.log("[API /admin/auth/me] Admin from database:", {
+        id: admin.id,
+        username: admin.username,
+        email: admin.email,
+        role: admin.role,
+        roleType: typeof admin.role,
+        roleValue: admin.role,
+        fullName: admin.fullName,
+        enabled: admin.enabled,
+        allKeys: Object.keys(admin),
+        fullObject: JSON.stringify(admin, null, 2)
+      });
+
       const { password: _, ...adminWithoutPassword } = admin;
-      res.json({ admin: adminWithoutPassword });
+      
+      // Ensure role is included in response
+      const adminResponse = {
+        ...adminWithoutPassword,
+        role: admin.role || "normal_admin", // Fallback if role is missing
+      };
+      
+      console.log("[API /admin/auth/me] Sending admin response:", {
+        id: adminResponse.id,
+        role: adminResponse.role,
+        roleType: typeof adminResponse.role,
+      });
+      
+      res.json({ admin: adminResponse });
     } catch (error) {
+      console.error("[API /admin/auth/me] Error:", error);
       res.status(500).json({ message: "Failed to fetch admin" });
     }
   });
