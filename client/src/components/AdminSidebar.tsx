@@ -88,11 +88,16 @@ export default function AdminSidebar({ admin }: AdminSidebarProps) {
     }
     
     // Normalize role check - handle various formats
-    const adminRole = String(admin.role || "").toLowerCase().trim();
-    const isSuperAdmin = adminRole === "super_admin" || adminRole === "superadmin";
+    const adminRoleRaw = String(admin.role || "").trim();
+    const adminRoleNormalized = adminRoleRaw.toLowerCase().replace(/[-\s_]+/g, "_");
+    // Check multiple variations: "super_admin", "superadmin", "super-admin", "Super Admin", etc.
+    const isSuperAdmin = adminRoleNormalized === "super_admin" || 
+                        adminRoleNormalized === "superadmin" ||
+                        adminRoleRaw.toLowerCase() === "super admin";
     
     console.log("[AdminSidebar] Admin role check:", {
-      adminRole,
+      adminRoleNormalized,
+      adminRoleRaw,
       rawRole: admin.role,
       isSuperAdmin,
       adminId: admin.id,
@@ -100,9 +105,11 @@ export default function AdminSidebar({ admin }: AdminSidebarProps) {
       fullRole: admin.role
     });
     
-    // Always add Create Admins menu item, but mark as disabled for non-super-admins
+    // Always add Create Admins menu item
     const items = [...baseItems];
     
+    // For super admins: enabled, no badge
+    // For non-super admins: disabled, with badge
     const createAdminsItem = { 
       title: "Create Admins", 
       icon: Shield, 
@@ -124,9 +131,9 @@ export default function AdminSidebar({ admin }: AdminSidebarProps) {
         disabled: false
       };
       items.push(adminManagementItem);
-      console.log("[AdminSidebar] ✅ Added Create Admins and Admin Management items. Total items:", items.length);
+      console.log("[AdminSidebar] ✅ Added Create Admins (enabled) and Admin Management items. Total items:", items.length);
     } else {
-      console.log("[AdminSidebar] Added Create Admins (disabled). Role:", adminRole);
+      console.log("[AdminSidebar] Added Create Admins (disabled) for role:", adminRoleNormalized);
     }
     
     return items;
