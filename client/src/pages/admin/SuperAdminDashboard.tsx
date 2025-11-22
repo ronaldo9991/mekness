@@ -23,7 +23,8 @@ import {
 } from "@/components/ui/dialog";
 import DataTable from "@/components/DataTable";
 import StatCard from "@/components/StatCard";
-import { Users, FileText, Wallet, DollarSign, Shield, Loader2, UserPlus, Check, X } from "lucide-react";
+import { Users, FileText, Wallet, DollarSign, Shield, Loader2, UserPlus, Check, X, Copy, Key } from "lucide-react";
+import CountryMultiSelect from "@/components/CountryMultiSelect";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { AdminUser, User, Document } from "@shared/schema";
@@ -63,8 +64,19 @@ export default function SuperAdminDashboard({ admin }: SuperAdminDashboardProps)
     password: "",
     email: "",
     fullName: "",
-    role: "normal_admin",
+    role: "normal_admin" as "super_admin" | "middle_admin" | "normal_admin",
+    countries: [] as string[],
   });
+  
+  const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
+  const [createdCredentials, setCreatedCredentials] = useState<{
+    username: string;
+    password: string;
+    email: string;
+    fullName: string;
+    role: string;
+    countries?: string[];
+  } | null>(null);
 
   const { data: stats, isLoading: loadingStats } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
@@ -84,6 +96,17 @@ export default function SuperAdminDashboard({ admin }: SuperAdminDashboardProps)
   const { data: activityLogs = [], isLoading: loadingLogs } = useQuery<ActivityLog[]>({
     queryKey: ["/api/admin/activity-logs"],
     refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
+  const { data: admins = [], isLoading: loadingAdmins } = useQuery<AdminUser[]>({
+    queryKey: ["/api/admin/admins"],
+    refetchInterval: 60000, // Refetch every 60 seconds
+  });
+  
+  // Fetch country assignments for middle admins
+  const { data: allCountryAssignments = [] } = useQuery<Array<{ adminId: string; country: string }>>({
+    queryKey: ["/api/admin/all-country-assignments"],
+    enabled: admins.length > 0,
   });
 
   const toggleUserMutation = useMutation({
@@ -111,17 +134,33 @@ export default function SuperAdminDashboard({ admin }: SuperAdminDashboardProps)
     mutationFn: async (data: any) => {
       return await apiRequest("POST", "/api/admin/admins", data);
     },
-    onSuccess: () => {
+    onSuccess: (response: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/admins"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       setCreateAdminOpen(false);
+      
+      // Store credentials to show in dialog
+      setCreatedCredentials({
+        username: response.credentials.username,
+        password: response.credentials.password,
+        email: newAdmin.email,
+        fullName: newAdmin.fullName,
+        role: newAdmin.role,
+        countries: response.countries?.map((c: any) => c.country) || [],
+      });
+      
+      setCredentialsDialogOpen(true);
+      
+      // Reset form
       setNewAdmin({
         username: "",
         password: "",
         email: "",
         fullName: "",
         role: "normal_admin",
+        countries: [],
       });
+      
       toast({
         title: "Admin Created",
         description: "New admin has been created successfully",
@@ -190,7 +229,42 @@ export default function SuperAdminDashboard({ admin }: SuperAdminDashboardProps)
       });
       return;
     }
-    createAdminMutation.mutate(newAdmin);
+    
+    // Validate countries for middle_admin
+    if (newAdmin.role === "middle_admin" && newAdmin.countries.length === 0) {
+      toast({
+        title: "Missing Countries",
+        description: "At least one country is required for middle admin",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Prepare data for API
+    const dataToSend: any = {
+      username: newAdmin.username,
+      password: newAdmin.password,
+      email: newAdmin.email,
+      fullName: newAdmin.fullName,
+      role: newAdmin.role,
+    };
+    
+    // Add countries only for middle_admin
+    if (newAdmin.role === "middle_admin") {
+      dataToSend.countries = newAdmin.countries;
+    }
+    
+    createAdminMutation.mutate(dataToSend);
+  };
+  
+  const copyCredentials = () => {
+    if (!createdCredentials) return;
+    const text = `Username: ${createdCredentials.username}\nPassword: ${createdCredentials.password}\nEmail: ${createdCredentials.email}\nFull Name: ${createdCredentials.fullName}\nRole: ${createdCredentials.role}${createdCredentials.countries && createdCredentials.countries.length > 0 ? `\nCountries: ${createdCredentials.countries.join(", ")}` : ""}`;
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied",
+      description: "Credentials copied to clipboard",
+    });
   };
 
   const handleRejectDocument = () => {
@@ -370,15 +444,17 @@ export default function SuperAdminDashboard({ admin }: SuperAdminDashboardProps)
         />
       </div>
 
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold">User Management</h2>
-        <Dialog open={createAdminOpen} onOpenChange={setCreateAdminOpen}>
-          <DialogTrigger asChild>
-            <Button data-testid="button-create-admin">
-              <UserPlus className="w-4 h-4 mr-2" />
-              Create New Admin
-            </Button>
-          </DialogTrigger>
+      {/* Admin Management Section */}
+      <div className="mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-semibold">Admin Management</h2>
+          <Dialog open={createAdminOpen} onOpenChange={setCreateAdminOpen}>
+            <DialogTrigger asChild>
+              <Button data-testid="button-create-admin">
+                <UserPlus className="w-4 h-4 mr-2" />
+                Create New Admin
+              </Button>
+            </DialogTrigger>
           <DialogContent className="glass-card max-w-md">
             <DialogHeader>
               <DialogTitle>Create New Admin</DialogTitle>
@@ -427,17 +503,39 @@ export default function SuperAdminDashboard({ admin }: SuperAdminDashboardProps)
               </div>
               <div>
                 <Label htmlFor="role">Role</Label>
-                <Select value={newAdmin.role} onValueChange={(value) => setNewAdmin({ ...newAdmin, role: value })}>
+                <Select 
+                  value={newAdmin.role} 
+                  onValueChange={(value: "super_admin" | "middle_admin" | "normal_admin") => {
+                    setNewAdmin({ 
+                      ...newAdmin, 
+                      role: value,
+                      countries: value === "middle_admin" ? newAdmin.countries : [] // Clear countries if not middle_admin
+                    });
+                  }}
+                >
                   <SelectTrigger id="role" data-testid="select-new-admin-role">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="normal_admin">Normal Admin</SelectItem>
-                    <SelectItem value="middle_admin">Middle Admin</SelectItem>
                     <SelectItem value="super_admin">Super Admin</SelectItem>
+                    <SelectItem value="middle_admin">Middle Admin</SelectItem>
+                    <SelectItem value="normal_admin">Normal Admin</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              
+              {newAdmin.role === "middle_admin" && (
+                <div>
+                  <CountryMultiSelect
+                    value={newAdmin.countries}
+                    onChange={(countries) => setNewAdmin({ ...newAdmin, countries })}
+                    label="Assigned Countries"
+                    required
+                    placeholder="Select countries for this middle admin..."
+                  />
+                </div>
+              )}
+              
               <Button
                 onClick={handleCreateAdmin}
                 className="w-full"
@@ -456,6 +554,81 @@ export default function SuperAdminDashboard({ admin }: SuperAdminDashboardProps)
             </div>
           </DialogContent>
         </Dialog>
+        </div>
+        
+        {loadingAdmins ? (
+          <Card className="p-12 text-center border-card-border">
+            <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading admins...</p>
+          </Card>
+        ) : (
+          <DataTable 
+            columns={[
+              {
+                key: "username",
+                label: "Username",
+                render: (value: string) => <span className="font-semibold">{value}</span>,
+              },
+              { key: "email", label: "Email" },
+              { key: "fullName", label: "Full Name" },
+              {
+                key: "role",
+                label: "Role",
+                render: (value: string) => {
+                  const roleColors: Record<string, string> = {
+                    super_admin: "bg-red-500/20 text-red-400 border-red-500/30",
+                    middle_admin: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+                    normal_admin: "bg-green-500/20 text-green-400 border-green-500/30",
+                  };
+                  return (
+                    <Badge variant="outline" className={roleColors[value] || ""}>
+                      {value.replace("_", " ").toUpperCase()}
+                    </Badge>
+                  );
+                },
+              },
+              {
+                key: "countries",
+                label: "Countries",
+                render: (_: any, row: AdminUser) => {
+                  if (row.role !== "middle_admin") return <span className="text-muted-foreground">-</span>;
+                  const adminCountries = allCountryAssignments
+                    .filter(a => a.adminId === row.id)
+                    .map(a => a.country);
+                  if (adminCountries.length === 0) return <span className="text-muted-foreground">No countries assigned</span>;
+                  return (
+                    <div className="flex flex-wrap gap-1">
+                      {adminCountries.slice(0, 3).map(country => (
+                        <Badge key={country} variant="secondary" className="text-xs">
+                          {country}
+                        </Badge>
+                      ))}
+                      {adminCountries.length > 3 && (
+                        <Badge variant="secondary" className="text-xs">
+                          +{adminCountries.length - 3} more
+                        </Badge>
+                      )}
+                    </div>
+                  );
+                },
+              },
+              {
+                key: "enabled",
+                label: "Status",
+                render: (value: boolean) => (
+                  <Badge variant={value ? "default" : "secondary"}>
+                    {value ? "Enabled" : "Disabled"}
+                  </Badge>
+                ),
+              },
+            ]} 
+            data={admins} 
+          />
+        )}
+      </div>
+
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold">User Management</h2>
       </div>
 
       <DataTable columns={userColumns} data={users} />
@@ -532,6 +705,88 @@ export default function SuperAdminDashboard({ admin }: SuperAdminDashboardProps)
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Credentials Display Dialog */}
+      <Dialog open={credentialsDialogOpen} onOpenChange={setCredentialsDialogOpen}>
+        <DialogContent className="glass-card max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Key className="w-5 h-5 text-primary" />
+              Admin Created Successfully
+            </DialogTitle>
+            <DialogDescription>
+              Save these credentials - the password will not be shown again
+            </DialogDescription>
+          </DialogHeader>
+          {createdCredentials && (
+            <div className="space-y-4">
+              <div className="p-4 rounded-lg bg-primary/10 border border-primary/30 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-muted-foreground">Username:</span>
+                  <span className="font-mono text-sm font-semibold">{createdCredentials.username}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-muted-foreground">Password:</span>
+                  <span className="font-mono text-sm font-semibold text-primary">{createdCredentials.password}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-muted-foreground">Email:</span>
+                  <span className="text-sm">{createdCredentials.email}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-muted-foreground">Full Name:</span>
+                  <span className="text-sm">{createdCredentials.fullName}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-muted-foreground">Role:</span>
+                  <Badge variant="secondary" className="capitalize">
+                    {createdCredentials.role.replace("_", " ")}
+                  </Badge>
+                </div>
+                {createdCredentials.countries && createdCredentials.countries.length > 0 && (
+                  <div className="pt-2 border-t border-primary/20">
+                    <span className="text-sm font-medium text-muted-foreground block mb-2">Assigned Countries:</span>
+                    <div className="flex flex-wrap gap-2">
+                      {createdCredentials.countries.map((country) => (
+                        <Badge key={country} variant="outline" className="text-xs">
+                          {country}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={copyCredentials}
+                  className="flex-1"
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy Credentials
+                </Button>
+                <Button
+                  onClick={() => {
+                    setCredentialsDialogOpen(false);
+                    setCreatedCredentials(null);
+                  }}
+                  className="flex-1"
+                >
+                  Close
+                </Button>
+              </div>
+              
+              <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+                <p className="text-xs text-yellow-400 flex items-start gap-2">
+                  <X className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>Important: Save these credentials securely. The password cannot be retrieved later.</span>
+                </p>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

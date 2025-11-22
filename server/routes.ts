@@ -2092,10 +2092,23 @@ export async function registerRoutes(app: Express): Promise<void> {
       if (!(await requireSuperAdmin(req, res))) return;
 
       const adminId = getCurrentAdminId(req)!;
-      const { username, password, email, fullName, role } = req.body;
+      const { username, password, email, fullName, role, countries } = req.body;
       
       if (!username || !password || !email || !fullName || !role) {
         return res.status(400).json({ message: "All fields are required" });
+      }
+
+      // Validate role
+      const validRoles = ["super_admin", "middle_admin", "normal_admin"];
+      if (!validRoles.includes(role)) {
+        return res.status(400).json({ message: "Invalid role. Must be super_admin, middle_admin, or normal_admin" });
+      }
+
+      // Validate countries for middle_admin
+      if (role === "middle_admin") {
+        if (!countries || !Array.isArray(countries) || countries.length === 0) {
+          return res.status(400).json({ message: "At least one country is required for middle admin" });
+        }
       }
 
       // Check if admin already exists
@@ -2124,17 +2137,45 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       const newAdmin = await storage.createAdminUser(validatedData);
 
+      // Create country assignments for middle_admin
+      const createdCountries: any[] = [];
+      if (role === "middle_admin" && countries && Array.isArray(countries)) {
+        for (const country of countries) {
+          try {
+            const assignment = await storage.createAdminCountryAssignment({
+              adminId: newAdmin.id,
+              country: country,
+            });
+            createdCountries.push(assignment);
+          } catch (error) {
+            console.error(`Failed to assign country ${country}:`, error);
+            // Continue with other countries
+          }
+        }
+      }
+
       // Log activity
+      const activityDetails = role === "middle_admin" && createdCountries.length > 0
+        ? `Created ${role} admin: ${username} with countries: ${createdCountries.map(c => c.country).join(", ")}`
+        : `Created ${role} admin: ${username}`;
+      
       await logActivity(
         adminId,
         "create_admin",
         "admin",
         newAdmin.id,
-        `Created ${role} admin: ${username}`
+        activityDetails
       );
 
       const { password: _, ...adminWithoutPassword } = newAdmin;
-      res.status(201).json(adminWithoutPassword);
+      res.status(201).json({
+        admin: adminWithoutPassword,
+        countries: createdCountries,
+        credentials: {
+          username: username,
+          password: password, // Return password only on creation
+        }
+      });
     } catch (error) {
       console.error("Failed to create admin:", error);
       res.status(400).json({ message: "Failed to create admin" });
@@ -2150,6 +2191,31 @@ export async function registerRoutes(app: Express): Promise<void> {
       res.json(adminsWithoutPasswords);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch admins" });
+    }
+  });
+
+  // Get all country assignments (for super admin to see all)
+  app.get("/api/admin/all-country-assignments", async (req, res) => {
+    try {
+      if (!(await requireSuperAdmin(req, res))) return;
+
+      const allAdmins = await storage.getAllAdminUsers();
+      const middleAdmins = allAdmins.filter(a => a.role === "middle_admin");
+      
+      const allAssignments: Array<{ adminId: string; country: string }> = [];
+      for (const admin of middleAdmins) {
+        const assignments = await storage.getAdminCountryAssignments(admin.id);
+        assignments.forEach(assignment => {
+          allAssignments.push({
+            adminId: admin.id,
+            country: assignment.country,
+          });
+        });
+      }
+      
+      res.json(allAssignments);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch country assignments" });
     }
   });
 
