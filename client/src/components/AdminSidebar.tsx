@@ -51,6 +51,9 @@ export default function AdminSidebar({ admin }: AdminSidebarProps) {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
 
+  // Debug: Log admin role to console
+  console.log("[AdminSidebar] Admin role:", admin?.role, "Admin object:", admin);
+
   // Fetch stats for badges
   const { data: stats } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
@@ -76,9 +79,11 @@ export default function AdminSidebar({ admin }: AdminSidebarProps) {
       { title: "Logs", icon: Activity, url: "/admin/logs", badge: null },
     ];
 
-    // Super admin gets additional items
-    if (admin.role === "super_admin") {
-      // Insert Create Admins near the top for visibility
+    // Super admin gets additional items - check role explicitly
+    const isSuperAdmin = admin?.role === "super_admin" || admin?.role === "SUPER_ADMIN";
+    
+    if (isSuperAdmin) {
+      // Insert Create Admins right after Dashboard for visibility
       baseItems.splice(1, 0, { title: "Create Admins", icon: Shield, url: "/admin/create-admins", badge: null });
       baseItems.push({ title: "Admin Management", icon: Users, url: "/admin/admins", badge: null });
     }
