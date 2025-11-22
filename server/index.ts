@@ -9,15 +9,16 @@ import { serveStatic, log } from "./vite";
 const app = express();
 const isVercel = Boolean(process.env.VERCEL);
 
-// Session configuration
+// Session configuration - will be updated in bootstrap() for PostgreSQL store
 app.use(session({
   secret: process.env.SESSION_SECRET || "mekness-secret-key-change-in-production",
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === "production",
+    secure: process.env.NODE_ENV === "production" && !process.env.RAILWAY_ENVIRONMENT,
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    sameSite: "lax",
   }
 }));
 
@@ -66,6 +67,53 @@ app.use((req, res, next) => {
 
 
 async function bootstrap(): Promise<{ app: express.Express; server: Server }> {
+  // Configure PostgreSQL session store in production
+  const databaseUrl = process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL;
+  const isPostgres = databaseUrl?.startsWith('postgresql://') || 
+                     databaseUrl?.startsWith('postgres://');
+  
+  if (process.env.NODE_ENV === "production" && isPostgres) {
+    try {
+      const pgSession = (await import("connect-pg-simple")).default(session);
+      const { Pool } = await import("pg");
+      
+      const pool = new Pool({
+        connectionString: databaseUrl,
+        ssl: databaseUrl?.includes('sslmode=require') || databaseUrl?.includes('shuttle.proxy.rlwy.net')
+          ? { rejectUnauthorized: false }
+          : undefined,
+      });
+      
+      const sessionStore = new pgSession({
+        pool: pool,
+        tableName: 'user_sessions',
+        createTableIfMissing: true,
+      });
+      
+      // Update session middleware with PostgreSQL store
+      app.use(session({
+        store: sessionStore,
+        secret: process.env.SESSION_SECRET || "mekness-secret-key-change-in-production",
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+          secure: false, // Railway uses HTTP internally
+          httpOnly: true,
+          maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+          sameSite: "lax",
+        }
+      }));
+      
+      log("✅ Using PostgreSQL session store");
+    } catch (error) {
+      log("⚠️ Warning: Failed to initialize PostgreSQL session store:", error);
+      log("   Sessions will use MemoryStore (not recommended for production)");
+    }
+  } else if (process.env.NODE_ENV === "production") {
+    log("⚠️ Warning: Using MemoryStore for sessions (not recommended for production)");
+    log("   Set DATABASE_URL to use PostgreSQL session store");
+  }
+
   // Wait for database connection to be established
   try {
     const { dbInit, ensureDbReady } = await import("./db.js");
