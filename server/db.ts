@@ -12,6 +12,7 @@ const isPostgres = databaseUrl?.startsWith('postgresql://') ||
 let db: any;
 let pool: any = null;
 let dbInitialized = false;
+let dbInitPromise: Promise<void> | null = null;
 
 // Initialize database connection
 async function initDatabase() {
@@ -80,8 +81,8 @@ async function initDatabase() {
   }
 }
 
-// Initialize immediately and wait for it
-const dbInit = initDatabase().catch((error) => {
+// Initialize immediately
+dbInitPromise = initDatabase().catch((error) => {
   console.error('❌ Failed to initialize database:', error);
   dbInitialized = false;
   // Don't throw - let the app start and handle errors at runtime
@@ -89,8 +90,8 @@ const dbInit = initDatabase().catch((error) => {
 
 // Export a function to ensure DB is ready
 export async function ensureDbReady() {
-  if (!dbInitialized) {
-    await dbInit;
+  if (!dbInitialized && dbInitPromise) {
+    await dbInitPromise;
   }
   if (!db) {
     throw new Error('Database not initialized');
@@ -98,7 +99,13 @@ export async function ensureDbReady() {
   return db;
 }
 
-export { db, pool, dbInit };
+// Wrapper for db that ensures it's ready
+export async function getDb() {
+  await ensureDbReady();
+  return db;
+}
+
+export { db, pool, dbInitPromise as dbInit };
 
 // Initialize database schema
 export async function initializeDatabase() {

@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { getDb } from "./db";
 import { users, adminUsers } from "@shared/schema";
 import bcrypt from "bcryptjs";
 
@@ -6,6 +6,7 @@ export async function seedDatabase() {
   console.log("🌱 Seeding database...");
 
   try {
+    const db = await getDb();
     // Check if demo user exists
     const existingUsers = await db.select().from(users).limit(1);
     if (existingUsers.length === 0) {
