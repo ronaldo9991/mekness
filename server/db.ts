@@ -5,9 +5,27 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const databaseUrl = process.env.DATABASE_URL;
+// Get DATABASE_URL - check multiple sources
+const databaseUrl = process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL;
+
+// Debug logging
+console.log('🔍 Database Configuration Check:');
+console.log('  DATABASE_URL:', databaseUrl ? `${databaseUrl.substring(0, 30)}...` : 'NOT SET');
+console.log('  NODE_ENV:', process.env.NODE_ENV);
+console.log('  PGHOST:', process.env.PGHOST || 'NOT SET');
+
 const isPostgres = databaseUrl?.startsWith('postgresql://') || 
                    databaseUrl?.startsWith('postgres://');
+
+if (isPostgres) {
+  console.log('✅ PostgreSQL detected from DATABASE_URL');
+} else {
+  console.log('⚠️ PostgreSQL NOT detected - will use SQLite');
+  if (process.env.NODE_ENV === 'production') {
+    console.error('❌ ERROR: In production mode but DATABASE_URL is not a PostgreSQL connection string!');
+    console.error('   This will cause issues. Please set DATABASE_URL in Railway.');
+  }
+}
 
 let db: any;
 let pool: any = null;
@@ -16,34 +34,55 @@ let dbInitPromise: Promise<void> | null = null;
 
 // Initialize database connection
 async function initDatabase() {
-  if (isPostgres) {
+  // Re-check at runtime in case env vars weren't available at module load
+  const runtimeDatabaseUrl = process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL;
+  const runtimeIsPostgres = runtimeDatabaseUrl?.startsWith('postgresql://') || 
+                             runtimeDatabaseUrl?.startsWith('postgres://');
+  
+  if (runtimeIsPostgres) {
     // PostgreSQL setup
     console.log('🐘 Using PostgreSQL database');
+    console.log('   Connection string:', runtimeDatabaseUrl?.replace(/:[^:@]+@/, ':****@'));
     
     const { drizzle } = await import('drizzle-orm/node-postgres');
     const { Pool } = await import('pg');
     
-    const connectionString = databaseUrl!;
+    const connectionString = runtimeDatabaseUrl!;
     
     // Parse SSL requirement from connection string
-    const sslConfig = connectionString.includes('sslmode=require') 
+    // Railway internal connections typically don't need SSL, but external ones might
+    const needsSSL = connectionString.includes('sslmode=require') || 
+                     connectionString.includes('shuttle.proxy.rlwy.net');
+    const sslConfig = needsSSL 
       ? { rejectUnauthorized: false } 
       : undefined;
+    
+    if (needsSSL) {
+      console.log('   Using SSL connection');
+    }
     
     pool = new Pool({
       connectionString,
       ssl: sslConfig,
+      // Add connection timeout
+      connectionTimeoutMillis: 10000,
+      // Add query timeout
+      query_timeout: 10000,
     });
     
     db = drizzle(pool, { schema });
     
     // Test connection
     try {
-      await pool.query('SELECT NOW()');
+      const result = await pool.query('SELECT NOW() as current_time, version() as pg_version');
       console.log('✅ PostgreSQL connection successful');
+      console.log('   Server time:', result.rows[0].current_time);
+      console.log('   PostgreSQL version:', result.rows[0].pg_version.split(' ')[0] + ' ' + result.rows[0].pg_version.split(' ')[1]);
       dbInitialized = true;
-    } catch (error) {
-      console.error('❌ PostgreSQL connection failed:', error);
+    } catch (error: any) {
+      console.error('❌ PostgreSQL connection failed:', error.message);
+      console.error('   Error code:', error.code);
+      console.error('   Connection string (masked):', connectionString?.replace(/:[^:@]+@/, ':****@'));
       throw error;
     }
   } else {
@@ -109,8 +148,18 @@ export { db, pool, dbInitPromise as dbInit };
 
 // Initialize database schema
 export async function initializeDatabase() {
-  if (isPostgres) {
+  // Re-check at runtime
+  const runtimeDatabaseUrl = process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL;
+  const runtimeIsPostgres = runtimeDatabaseUrl?.startsWith('postgresql://') || 
+                             runtimeDatabaseUrl?.startsWith('postgres://');
+  
+  if (runtimeIsPostgres) {
     // For PostgreSQL, automatically create tables if they don't exist
+    if (!pool) {
+      console.error('❌ PostgreSQL pool not initialized. Cannot create tables.');
+      throw new Error('PostgreSQL connection pool not available');
+    }
+    
     try {
       // Check if users table exists
       const result = await pool.query(`
