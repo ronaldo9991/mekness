@@ -1586,7 +1586,8 @@ export async function registerRoutes(app: Express): Promise<void> {
         roleType: typeof adminResponse.role,
       });
       
-      res.json({ admin: adminResponse });
+      // Return admin object directly (not wrapped) to match useQuery expectations
+      res.json(adminResponse);
     } catch (error) {
       console.error("[API /admin/auth/me] Error:", error);
       res.status(500).json({ message: "Failed to fetch admin" });
