@@ -11,6 +11,7 @@ import DataTable from "@/components/DataTable";
 
 interface IBStats {
   totalReferrals: number;
+  acceptedReferrals: number;
   activeReferrals: number;
   totalCommission: string;
   pendingCommission: string;
@@ -23,6 +24,7 @@ interface IBStats {
     totalDeposits: string;
     commissionEarned: string;
     status: "Active" | "Inactive";
+    referralStatus?: "Pending" | "Accepted" | "Rejected";
   }>;
 }
 
@@ -85,13 +87,26 @@ export default function IBAccount() {
       key: "status",
       label: "Status",
       render: (_: any, row: IBStats["referrals"][0]) => (
-        <span className={`text-xs px-2 py-1 rounded-full ${
-          row.status === "Active" 
-            ? "bg-green-500/20 text-green-400" 
-            : "bg-gray-500/20 text-gray-400"
-        }`}>
-          {row.status}
-        </span>
+        <div className="flex flex-col gap-1">
+          <span className={`text-xs px-2 py-1 rounded-full ${
+            row.status === "Active" 
+              ? "bg-green-500/20 text-green-400" 
+              : "bg-gray-500/20 text-gray-400"
+          }`}>
+            {row.status}
+          </span>
+          {row.referralStatus && (
+            <span className={`text-xs px-2 py-1 rounded-full ${
+              row.referralStatus === "Accepted"
+                ? "bg-blue-500/20 text-blue-400"
+                : row.referralStatus === "Pending"
+                ? "bg-yellow-500/20 text-yellow-400"
+                : "bg-red-500/20 text-red-400"
+            }`}>
+              {row.referralStatus}
+            </span>
+          )}
+        </div>
       ),
     },
   ];

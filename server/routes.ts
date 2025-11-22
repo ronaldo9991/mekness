@@ -959,19 +959,26 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       // Find all users who were referred by this user (referredBy === user.id)
       const allUsers = await storage.getAllUsers();
-      const referrals = allUsers.filter(u => u.referredBy === userId);
+      const allReferrals = allUsers.filter(u => u.referredBy === userId);
+      
+      // Only count accepted referrals for commission calculations
+      const acceptedReferrals = allReferrals.filter(u => u.referralStatus === "Accepted");
 
-      // Calculate referral stats
+      // Calculate referral stats - only for accepted referrals
       let totalDeposits = 0;
       let totalCommission = parseFloat(ibWallet.totalCommission || "0");
       const referralDetails = await Promise.all(
-        referrals.map(async (refUser) => {
+        allReferrals.map(async (refUser) => {
           const deposits = await storage.getDeposits(refUser.id);
           const completedDeposits = deposits.filter(d => d.status === "Completed" || d.status === "Approved");
           const userTotalDeposits = completedDeposits.reduce((sum, d) => sum + parseFloat(d.amount), 0);
-          const commission = userTotalDeposits * (parseFloat(ibWallet.commissionRate || "0") / 100);
           
-          totalDeposits += userTotalDeposits;
+          // Only calculate commission if referral is accepted
+          let commission = 0;
+          if (refUser.referralStatus === "Accepted") {
+            commission = userTotalDeposits * (parseFloat(ibWallet.commissionRate || "0") / 100);
+            totalDeposits += userTotalDeposits;
+          }
 
           return {
             id: refUser.id,
@@ -981,22 +988,29 @@ export async function registerRoutes(app: Express): Promise<void> {
             totalDeposits: userTotalDeposits.toFixed(2),
             commissionEarned: commission.toFixed(2),
             status: completedDeposits.length > 0 ? "Active" as const : "Inactive" as const,
+            referralStatus: refUser.referralStatus || "Pending",
           };
         })
       );
 
-      // Calculate pending commission (from pending deposits)
+      // Calculate pending commission (from pending deposits of accepted referrals only)
       let pendingCommission = 0;
-      for (const refUser of referrals) {
+      for (const refUser of acceptedReferrals) {
         const deposits = await storage.getDeposits(refUser.id);
         const pendingDeposits = deposits.filter(d => d.status === "Pending");
         const pendingAmount = pendingDeposits.reduce((sum, d) => sum + parseFloat(d.amount), 0);
         pendingCommission += pendingAmount * (parseFloat(ibWallet.commissionRate || "0") / 100);
       }
+      
+      // Count active referrals (only accepted ones with deposits)
+      const activeReferrals = referralDetails.filter(r => 
+        r.status === "Active" && r.referralStatus === "Accepted"
+      );
 
       res.json({
-        totalReferrals: referrals.length,
-        activeReferrals: referralDetails.filter(r => r.status === "Active").length,
+        totalReferrals: allReferrals.length,
+        acceptedReferrals: acceptedReferrals.length,
+        activeReferrals: activeReferrals.length,
         totalCommission: totalCommission.toFixed(2),
         pendingCommission: pendingCommission.toFixed(2),
         wallet: ibWallet,
