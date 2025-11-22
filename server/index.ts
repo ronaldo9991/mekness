@@ -9,18 +9,7 @@ import { serveStatic, log } from "./vite";
 const app = express();
 const isVercel = Boolean(process.env.VERCEL);
 
-// Session configuration - will be updated in bootstrap() for PostgreSQL store
-app.use(session({
-  secret: process.env.SESSION_SECRET || "mekness-secret-key-change-in-production",
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === "production" && !process.env.RAILWAY_ENVIRONMENT,
-    httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-    sameSite: "lax",
-  }
-}));
+// Session middleware will be configured in bootstrap() to support PostgreSQL store
 
 declare module 'http' {
   interface IncomingMessage {
@@ -67,10 +56,12 @@ app.use((req, res, next) => {
 
 
 async function bootstrap(): Promise<{ app: express.Express; server: Server }> {
-  // Configure PostgreSQL session store in production
+  // Configure session middleware with PostgreSQL store in production
   const databaseUrl = process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL;
   const isPostgres = databaseUrl?.startsWith('postgresql://') || 
                      databaseUrl?.startsWith('postgres://');
+  
+  let sessionStore: any = undefined;
   
   if (process.env.NODE_ENV === "production" && isPostgres) {
     try {
@@ -84,25 +75,11 @@ async function bootstrap(): Promise<{ app: express.Express; server: Server }> {
           : undefined,
       });
       
-      const sessionStore = new pgSession({
+      sessionStore = new pgSession({
         pool: pool,
         tableName: 'user_sessions',
         createTableIfMissing: true,
       });
-      
-      // Update session middleware with PostgreSQL store
-      app.use(session({
-        store: sessionStore,
-        secret: process.env.SESSION_SECRET || "mekness-secret-key-change-in-production",
-        resave: false,
-        saveUninitialized: false,
-        cookie: {
-          secure: false, // Railway uses HTTP internally
-          httpOnly: true,
-          maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-          sameSite: "lax",
-        }
-      }));
       
       log("✅ Using PostgreSQL session store");
     } catch (error) {
@@ -113,6 +90,20 @@ async function bootstrap(): Promise<{ app: express.Express; server: Server }> {
     log("⚠️ Warning: Using MemoryStore for sessions (not recommended for production)");
     log("   Set DATABASE_URL to use PostgreSQL session store");
   }
+  
+  // Configure session middleware (must be before routes)
+  app.use(session({
+    store: sessionStore,
+    secret: process.env.SESSION_SECRET || "mekness-secret-key-change-in-production",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false, // Railway uses HTTP internally, HTTPS is handled by Railway
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+      sameSite: "lax",
+    }
+  }));
 
   // Wait for database connection to be established
   try {
