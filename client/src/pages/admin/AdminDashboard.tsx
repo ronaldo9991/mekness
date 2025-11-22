@@ -18,6 +18,7 @@ import AdminManagement from "./AdminManagement";
 import AdminSupport from "./AdminSupport";
 import AdminLogs from "./AdminLogs";
 import AdminDocuments from "./AdminDocuments";
+import AdminCreation from "./AdminCreation";
 import SuperAdminDashboard from "./SuperAdminDashboard";
 import MiddleAdminDashboard from "./MiddleAdminDashboard";
 import NormalAdminDashboard from "./NormalAdminDashboard";
@@ -106,6 +107,9 @@ export default function AdminDashboard() {
           </Route>
           <Route path="/admin/logs">
             <AdminLogs />
+          </Route>
+          <Route path="/admin/create-admins">
+            {admin.role === "super_admin" && <AdminCreation admin={admin} />}
           </Route>
           <Route path="/admin/admins">
             {admin.role === "super_admin" && <SuperAdminDashboard admin={admin} />}

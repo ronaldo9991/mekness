@@ -78,7 +78,8 @@ export default function AdminSidebar({ admin }: AdminSidebarProps) {
 
     // Super admin gets all items
     if (admin.role === "super_admin") {
-      baseItems.push({ title: "Admin Management", icon: Shield, url: "/admin/admins", badge: null });
+      baseItems.push({ title: "Create Admins", icon: Shield, url: "/admin/create-admins", badge: null });
+      baseItems.push({ title: "Admin Management", icon: Users, url: "/admin/admins", badge: null });
     }
 
     // Middle admin and normal admin see filtered items based on permissions
