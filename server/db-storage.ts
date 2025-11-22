@@ -253,10 +253,9 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
-  async markNotificationAsRead(id: string): Promise<Notification | undefined> {
+  async markNotificationAsRead(id: string): Promise<void> {
     const db = await getDb();
-    const result = await db.update(notifications).set({ read: true }).where(eq(notifications.id, id)).returning();
-    return result[0];
+    await db.update(notifications).set({ read: true }).where(eq(notifications.id, id));
   }
 
   // Admin Users
