@@ -64,10 +64,53 @@ export async function registerRoutes(app: Express): Promise<void> {
       return false;
     }
     const admin = await storage.getAdminUser(adminId);
-    if (!admin || !admin.enabled || admin.role !== "super_admin") {
+    if (!admin || !admin.enabled) {
+      res.status(401).json({ message: "Super admin access required" });
+      return false;
+    }
+    
+    // Normalize role check - handle various formats
+    const adminRole = String(admin.role || "").trim().toLowerCase().replace(/[-\s_]+/g, "_");
+    const isSuperAdmin = adminRole === "super_admin" || adminRole === "superadmin";
+    
+    // Debug logging
+    console.log("[requireSuperAdmin] Role check:", {
+      adminId: admin.id,
+      username: admin.username,
+      rawRole: admin.role,
+      normalizedRole: adminRole,
+      isSuperAdmin,
+    });
+    
+    if (!isSuperAdmin) {
       res.status(403).json({ message: "Super admin access required" });
       return false;
     }
+    return true;
+  };
+  
+  // Add middleware to check admin role for different operations
+  const requireMiddleAdminOrSuper = async (req: any, res: any): Promise<boolean> => {
+    const adminId = getCurrentAdminId(req);
+    if (!adminId) {
+      res.status(401).json({ message: "Admin authentication required" });
+      return false;
+    }
+    const admin = await storage.getAdminUser(adminId);
+    if (!admin || !admin.enabled) {
+      res.status(401).json({ message: "Admin authentication required" });
+      return false;
+    }
+    
+    const adminRole = String(admin.role || "").trim().toLowerCase().replace(/[-\s_]+/g, "_");
+    const isSuperAdmin = adminRole === "super_admin" || adminRole === "superadmin";
+    const isMiddleAdmin = adminRole === "middle_admin" || adminRole === "middleadmin";
+    
+    if (!isSuperAdmin && !isMiddleAdmin) {
+      res.status(403).json({ message: "Middle admin or super admin access required" });
+      return false;
+    }
+    
     return true;
   };
 
@@ -1724,9 +1767,12 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       let deposits;
 
-      if (admin!.role === "super_admin") {
+      // Normalize role for comparison
+      const adminRole = String(admin!.role || "").trim().toLowerCase().replace(/[-\s_]+/g, "_");
+      
+      if (adminRole === "super_admin" || adminRole === "superadmin") {
         deposits = await storage.getAllDeposits();
-      } else if (admin!.role === "middle_admin") {
+      } else if (adminRole === "middle_admin" || adminRole === "middleadmin") {
         const assignments = await storage.getAdminCountryAssignments(adminId);
         const countries = assignments.map(a => a.country);
         const allUsers = await storage.getAllUsers();
@@ -1747,7 +1793,8 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   app.patch("/api/admin/deposits/:id/approve", async (req, res) => {
     try {
-      if (!(await requireAdmin(req, res))) return;
+      // Only super admin and middle admin can approve deposits
+      if (!(await requireMiddleAdminOrSuper(req, res))) return;
 
       const adminId = getCurrentAdminId(req)!;
       const { amount } = req.body;
@@ -1849,7 +1896,8 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   app.patch("/api/admin/deposits/:id/reject", async (req, res) => {
     try {
-      if (!(await requireAdmin(req, res))) return;
+      // Only super admin and middle admin can reject deposits
+      if (!(await requireMiddleAdminOrSuper(req, res))) return;
 
       const adminId = getCurrentAdminId(req)!;
       const deposit = await storage.getDeposit(req.params.id);
@@ -2519,13 +2567,16 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       let users, documents, accounts, deposits, withdrawals;
 
-      if (admin!.role === "super_admin") {
+      // Normalize role for comparison
+      const adminRole = String(admin!.role || "").trim().toLowerCase().replace(/[-\s_]+/g, "_");
+      
+      if (adminRole === "super_admin" || adminRole === "superadmin") {
         users = await storage.getAllUsers();
         documents = await storage.getAllDocuments();
         accounts = await storage.getAllTradingAccounts();
         deposits = await storage.getAllDeposits();
         withdrawals = await storage.getAllWithdrawals();
-      } else if (admin!.role === "middle_admin") {
+      } else if (adminRole === "middle_admin" || adminRole === "middleadmin") {
         const assignments = await storage.getAdminCountryAssignments(adminId);
         const countries = assignments.map(a => a.country);
         
