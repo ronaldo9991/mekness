@@ -18,6 +18,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import DataTable from "@/components/DataTable";
 import { UserPlus, Loader2, Copy, Key, Shield, Users, Globe } from "lucide-react";
