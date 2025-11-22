@@ -43,8 +43,18 @@ export default function AdminLogin() {
 
       const { admin } = await response.json();
       
+      // Show role-specific welcome message
+      let welcomeTitle = "Welcome back!";
+      if (admin.role === "super_admin") {
+        welcomeTitle = "Welcome back Super Admin!";
+      } else if (admin.role === "middle_admin") {
+        welcomeTitle = "Welcome back Middle Admin!";
+      } else if (admin.role === "normal_admin") {
+        welcomeTitle = "Welcome back Admin!";
+      }
+      
       toast({
-        title: "Welcome back!",
+        title: welcomeTitle,
         description: `Logged in as ${admin.fullName}`,
       });
 

@@ -113,7 +113,20 @@ export default function AdminDashboard() {
           </Route>
           <Route path="/admin/create-admins">
             {(() => {
-              if (admin.role === "super_admin") {
+              // Normalize role check - handle various formats
+              const adminRole = String(admin?.role || "").toLowerCase().trim();
+              const isSuperAdmin = adminRole === "super_admin" || adminRole === "superadmin";
+              
+              // Debug logging
+              console.log("[AdminDashboard] Create Admins Route Check:", {
+                rawRole: admin?.role,
+                normalizedRole: adminRole,
+                isSuperAdmin,
+                adminId: admin?.id,
+                adminEmail: admin?.email,
+              });
+              
+              if (isSuperAdmin) {
                 return <AdminCreation admin={admin} />;
               }
               return (
@@ -126,7 +139,10 @@ export default function AdminDashboard() {
                         Only Super Administrators can create admin accounts.
                       </p>
                       <p className="text-sm text-muted-foreground mt-4">
-                        Your current role: <Badge variant="outline">{admin.role || "Admin"}</Badge>
+                        Your current role: <Badge variant="outline">{admin?.role || "Admin"}</Badge>
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Raw role value: "{admin?.role}" | Normalized: "{adminRole}"
                       </p>
                       <Button
                         onClick={() => setLocation("/admin/dashboard")}

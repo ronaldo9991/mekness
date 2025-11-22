@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,11 +54,54 @@ export default function AdminCreation({ admin }: AdminCreationProps) {
     countries?: string[];
   } | null>(null);
 
+  // Fetch admins list - handle errors gracefully without blocking the page
   const { data: admins = [], isLoading: loadingAdmins, error: adminsError } = useQuery<AdminUser[]>({
     queryKey: ["/api/admin/admins"],
     refetchInterval: 60000,
     retry: false,
+    // Use custom queryFn to handle 401/403 gracefully
+    queryFn: async () => {
+      try {
+        const res = await fetch("/api/admin/admins", {
+          credentials: "include",
+        });
+        
+        // If unauthorized, return empty array instead of throwing
+        if (res.status === 401 || res.status === 403) {
+          console.warn("[AdminCreation] Not authorized to fetch admins list");
+          return [];
+        }
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error("[AdminCreation] Failed to load admins:", res.status, errorText);
+          return [];
+        }
+        
+        return await res.json();
+      } catch (error) {
+        console.error("[AdminCreation] Error loading admins:", error);
+        // Return empty array instead of throwing - allows page to still render
+        return [];
+      }
+    },
   });
+  
+  // Show toast notification if there's an error, but don't block the page
+  useEffect(() => {
+    if (adminsError) {
+      const errorMessage = (adminsError as Error)?.message || "Unknown error";
+      const isUnauthorized = errorMessage.includes("401") || errorMessage.includes("Unauthorized") || errorMessage.includes("403");
+      
+      if (isUnauthorized) {
+        toast({
+          title: "Permission Warning",
+          description: "Unable to load admin list. Some features may be limited.",
+          variant: "default",
+        });
+      }
+    }
+  }, [adminsError, toast]);
   
   // Fetch country assignments for middle admins
   const { data: allCountryAssignments = [] } = useQuery<Array<{ adminId: string; country: string }>>({
@@ -160,51 +203,8 @@ export default function AdminCreation({ admin }: AdminCreationProps) {
     });
   };
 
-  // Show error message if authentication fails
-  if (adminsError) {
-    const errorMessage = (adminsError as Error)?.message || "Unknown error";
-    const isUnauthorized = errorMessage.includes("401") || errorMessage.includes("Unauthorized");
-    
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
-              Admin Creation
-            </h1>
-            <p className="text-muted-foreground">
-              Create and manage admin accounts for the system
-            </p>
-          </div>
-        </div>
-        <Card className="p-6 border-destructive">
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-destructive">Authentication Error</h2>
-            {isUnauthorized ? (
-              <div className="space-y-2">
-                <p className="text-muted-foreground">
-                  Your session has expired or you don't have permission to access this page.
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Please log out and log back in as a Super Administrator.
-                </p>
-                <Button
-                  onClick={() => window.location.href = "/admin/login"}
-                  variant="destructive"
-                >
-                  Go to Login
-                </Button>
-              </div>
-            ) : (
-              <p className="text-muted-foreground">
-                Failed to load admin list: {errorMessage}
-              </p>
-            )}
-          </div>
-        </Card>
-      </div>
-    );
-  }
+  // Show warning if there's an error loading admins, but don't block the page
+  // Only show this as a toast notification, not blocking the entire component
 
   return (
     <div className="space-y-6">
