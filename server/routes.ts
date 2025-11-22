@@ -2012,11 +2012,21 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(404).json({ message: "Document not found" });
       }
 
+      // Check if user is now fully verified
+      const userDocuments = await storage.getDocuments(document.userId);
+      const requiredTypes = ["ID Proof"];
+      const verifiedDocs = userDocuments.filter(
+        doc => doc.status === "Verified" && requiredTypes.includes(doc.type)
+      );
+      const isNowVerified = verifiedDocs.length >= requiredTypes.length;
+
       // Create notification for user
       await storage.createNotification({
         userId: document.userId,
-        title: "Document Approved",
-        message: `Your ${document.type} has been verified.`,
+        title: isNowVerified ? "🎉 Verification Complete!" : "Document Approved",
+        message: isNowVerified 
+          ? "Your identity has been verified. You can now access all trading features!"
+          : `Your ${document.type} has been verified.`,
         type: "success",
       });
 
@@ -2026,10 +2036,13 @@ export async function registerRoutes(app: Express): Promise<void> {
         "approve_document",
         "document",
         req.params.id,
-        `Approved ${document.type} for user ${document.userId}`
+        `Approved ${document.type} for user ${document.userId}${isNowVerified ? " - User is now fully verified" : ""}`
       );
 
-      res.json(updated);
+      res.json({
+        ...updated,
+        isUserVerified: isNowVerified, // Include verification status in response
+      });
     } catch (error) {
       console.error("Failed to approve document:", error);
       res.status(500).json({ message: "Failed to approve document" });

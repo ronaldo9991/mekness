@@ -24,10 +24,15 @@ interface DashboardStats {
 export default function DashboardHome() {
   const [, setLocation] = useLocation();
 
-  // Check verification status - only refetch when tab is visible
-  const { data: verificationStatus, isLoading: loadingVerification } = useQuery({
+  // Check verification status - refetch more frequently to catch verification updates
+  const { data: verificationStatus, isLoading: loadingVerification } = useQuery<{
+    isVerified: boolean;
+    verifiedCount: number;
+    requiredCount: number;
+    hasPending: boolean;
+  }>({
     queryKey: ["/api/documents/verification-status"],
-    refetchInterval: 60000, // Increased to 60s
+    refetchInterval: 10000, // Check every 10 seconds for faster updates after verification
     refetchIntervalInBackground: false, // Don't refetch when tab is hidden
   });
 

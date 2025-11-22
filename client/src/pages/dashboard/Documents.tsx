@@ -6,7 +6,8 @@ import { Upload, Eye, Loader2, AlertCircle, FileText, X } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import {
   Dialog,
   DialogContent,
@@ -32,11 +33,38 @@ export default function Documents() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
+  const [, setLocation] = useLocation();
+
   // Fetch documents with real-time updates
   const { data: documents = [], isLoading } = useQuery<Document[]>({
     queryKey: ["/api/documents"],
-    refetchInterval: 30000, // Refetch every 30 seconds for real-time status updates
+    refetchInterval: 10000, // Refetch every 10 seconds for faster status updates
   });
+
+  // Check verification status to auto-redirect when verified
+  const { data: verificationStatus } = useQuery<{
+    isVerified: boolean;
+    verifiedCount: number;
+    requiredCount: number;
+    hasPending: boolean;
+  }>({
+    queryKey: ["/api/documents/verification-status"],
+    refetchInterval: 5000, // Check every 5 seconds when on documents page
+  });
+
+  // Auto-redirect to dashboard when verified
+  useEffect(() => {
+    if (verificationStatus?.isVerified) {
+      toast({
+        title: "🎉 Verification Complete!",
+        description: "Your documents have been verified. Redirecting to dashboard...",
+      });
+      // Small delay to show success message
+      setTimeout(() => {
+        setLocation("/dashboard");
+      }, 2000);
+    }
+  }, [verificationStatus?.isVerified, setLocation, toast]);
 
   // Upload mutation
   const uploadMutation = useMutation({
@@ -56,6 +84,7 @@ export default function Documents() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/documents/verification-status"] });
       toast({
         title: "Success",
         description: "Document uploaded successfully. Awaiting verification.",
@@ -88,11 +117,11 @@ export default function Documents() {
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file size (max 20MB - base64 encoding adds ~33% size, so 20MB raw = ~27MB base64)
+    if (file.size > 20 * 1024 * 1024) {
       toast({
         title: "File Too Large",
-        description: "File size must be less than 5MB",
+        description: "File size must be less than 20MB",
         variant: "destructive",
       });
       return;
