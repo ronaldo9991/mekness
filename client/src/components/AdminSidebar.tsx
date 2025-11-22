@@ -35,6 +35,7 @@ import type { AdminUser } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 
 interface AdminSidebarProps {
   admin: AdminUser;
@@ -59,8 +60,8 @@ export default function AdminSidebar({ admin }: AdminSidebarProps) {
     queryKey: ["/api/admin/stats"],
   });
 
-  // Compute menu items - ensure it's reactive to admin changes
-  const menuItems = (() => {
+  // Compute menu items - ensure it's reactive to admin changes using useMemo
+  const menuItems = useMemo(() => {
     const baseItems = [
       { title: "Dashboard", icon: Home, url: "/admin/dashboard", badge: null },
       { title: "Clients", icon: Users, url: "/admin/clients", badge: null },
@@ -82,34 +83,41 @@ export default function AdminSidebar({ admin }: AdminSidebarProps) {
 
     // Super admin gets additional items - check role explicitly with multiple checks
     if (!admin) {
+      console.log("[AdminSidebar] No admin object, returning base items");
       return baseItems;
     }
     
-    const adminRole = admin.role?.toLowerCase() || "";
+    const adminRole = (admin.role || "").toLowerCase().trim();
     const isSuperAdmin = adminRole === "super_admin" || adminRole === "superadmin";
     
-    console.log("[AdminSidebar] Checking role:", {
+    console.log("[AdminSidebar] Admin role check:", {
       adminRole,
       isSuperAdmin,
-      adminObject: admin,
+      adminId: admin.id,
+      adminEmail: admin.email,
       fullRole: admin.role
     });
     
     if (isSuperAdmin) {
+      // Create new array to avoid mutating baseItems
+      const items = [...baseItems];
+      
       // Insert Create Admins right after Dashboard for visibility
       const createAdminsItem = { title: "Create Admins", icon: Shield, url: "/admin/create-admins", badge: null };
       const adminManagementItem = { title: "Admin Management", icon: Users, url: "/admin/admins", badge: null };
       
-      // Insert after Dashboard
-      baseItems.splice(1, 0, createAdminsItem);
+      // Insert after Dashboard (at index 1)
+      items.splice(1, 0, createAdminsItem);
       // Add Admin Management at the end
-      baseItems.push(adminManagementItem);
+      items.push(adminManagementItem);
       
-      console.log("[AdminSidebar] Added Create Admins and Admin Management items");
+      console.log("[AdminSidebar] ✅ Added Create Admins and Admin Management items. Total items:", items.length);
+      return items;
     }
 
+    console.log("[AdminSidebar] Not super admin, returning base items only");
     return baseItems;
-  })();
+  }, [admin, admin?.role, stats]);
 
   const handleLogout = async () => {
     try {
