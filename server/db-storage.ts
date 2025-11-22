@@ -331,7 +331,17 @@ export class DbStorage implements IStorage {
 
   async getAllAdminUsers(): Promise<AdminUser[]> {
     const db = await getDb();
-    return await db.select().from(adminUsers);
+    return await db.select({
+      id: adminUsers.id,
+      username: adminUsers.username,
+      password: adminUsers.password,
+      email: adminUsers.email,
+      fullName: adminUsers.fullName,
+      role: adminUsers.role,
+      enabled: adminUsers.enabled,
+      createdAt: adminUsers.createdAt,
+      createdBy: adminUsers.createdBy,
+    }).from(adminUsers);
   }
 
   // Admin Country Assignments
