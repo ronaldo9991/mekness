@@ -1557,10 +1557,12 @@ export async function registerRoutes(app: Express): Promise<void> {
       const admin = await storage.getAdminUser(adminId);
       
       let users;
-      if (admin!.role === "super_admin") {
+      // Normalize role for comparison
+      const adminRole = String(admin!.role || "").trim().toLowerCase().replace(/[-\s_]+/g, "_");
+      if (adminRole === "super_admin" || adminRole === "superadmin") {
         // Super admin sees all users
         users = await storage.getAllUsers();
-      } else if (admin!.role === "middle_admin") {
+      } else if (adminRole === "middle_admin" || adminRole === "middleadmin") {
         // Middle admin sees users from assigned countries
         const assignments = await storage.getAdminCountryAssignments(adminId);
         const countries = assignments.map(a => a.country);
@@ -1683,10 +1685,12 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       let documents: Document[];
       
-      if (admin!.role === "super_admin") {
+      // Normalize role for comparison
+      const adminRole = String(admin!.role || "").trim().toLowerCase().replace(/[-\s_]+/g, "_");
+      if (adminRole === "super_admin" || adminRole === "superadmin") {
         // Super admin sees all documents
         documents = await storage.getAllDocuments();
-      } else if (admin!.role === "middle_admin") {
+      } else if (adminRole === "middle_admin" || adminRole === "middleadmin") {
         // Middle admin sees documents from users in assigned countries
         const assignments = await storage.getAdminCountryAssignments(adminId);
         const countries = assignments.map(a => a.country);
@@ -2433,7 +2437,9 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       let accounts = await storage.getAllTradingAccounts();
 
-      if (admin!.role === "middle_admin") {
+      // Normalize role for comparison
+      const adminRole = String(admin!.role || "").trim().toLowerCase().replace(/[-\s_]+/g, "_");
+      if (adminRole === "middle_admin" || adminRole === "middleadmin") {
         // Filter by assigned countries
         const assignments = await storage.getAdminCountryAssignments(adminId);
         const countries = assignments.map(a => a.country);
@@ -2499,7 +2505,9 @@ export async function registerRoutes(app: Express): Promise<void> {
       const admin = await storage.getAdminUser(adminId);
       
       let logs;
-      if (admin!.role === "super_admin") {
+      // Normalize role for comparison
+      const adminRole = String(admin!.role || "").trim().toLowerCase().replace(/[-\s_]+/g, "_");
+      if (adminRole === "super_admin" || adminRole === "superadmin") {
         logs = await storage.getAllActivityLogs();
       } else {
         logs = await storage.getActivityLogs(adminId);
@@ -2522,9 +2530,11 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       let accounts;
 
-      if (admin!.role === "super_admin") {
+      // Normalize role for comparison
+      const adminRole = String(admin!.role || "").trim().toLowerCase().replace(/[-\s_]+/g, "_");
+      if (adminRole === "super_admin" || adminRole === "superadmin") {
         accounts = await storage.getAllTradingAccounts();
-      } else if (admin!.role === "middle_admin") {
+      } else if (adminRole === "middle_admin" || adminRole === "middleadmin") {
         const assignments = await storage.getAdminCountryAssignments(adminId);
         const countries = assignments.map(a => a.country);
         const allUsers = await storage.getAllUsers();
