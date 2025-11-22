@@ -11,6 +11,7 @@ const isPostgres = databaseUrl?.startsWith('postgresql://') ||
 
 let db: any;
 let pool: any = null;
+let dbInitialized = false;
 
 // Initialize database connection
 async function initDatabase() {
@@ -39,6 +40,7 @@ async function initDatabase() {
     try {
       await pool.query('SELECT NOW()');
       console.log('✅ PostgreSQL connection successful');
+      dbInitialized = true;
     } catch (error) {
       console.error('❌ PostgreSQL connection failed:', error);
       throw error;
@@ -74,14 +76,27 @@ async function initDatabase() {
     
     db = drizzle(sqlite, { schema });
     console.log('✅ SQLite database initialized');
+    dbInitialized = true;
   }
 }
 
-// Initialize immediately
+// Initialize immediately and wait for it
 const dbInit = initDatabase().catch((error) => {
   console.error('❌ Failed to initialize database:', error);
+  dbInitialized = false;
   // Don't throw - let the app start and handle errors at runtime
 });
+
+// Export a function to ensure DB is ready
+export async function ensureDbReady() {
+  if (!dbInitialized) {
+    await dbInit;
+  }
+  if (!db) {
+    throw new Error('Database not initialized');
+  }
+  return db;
+}
 
 export { db, pool, dbInit };
 

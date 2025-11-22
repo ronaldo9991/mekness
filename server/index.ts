@@ -68,8 +68,9 @@ app.use((req, res, next) => {
 async function bootstrap(): Promise<{ app: express.Express; server: Server }> {
   // Wait for database connection to be established
   try {
-    const { dbInit } = await import("./db.js");
+    const { dbInit, ensureDbReady } = await import("./db.js");
     await dbInit;
+    await ensureDbReady();
     log("✅ Database connection established");
   } catch (error) {
     log("⚠️ Warning: Database connection failed:", error);
@@ -82,6 +83,7 @@ async function bootstrap(): Promise<{ app: express.Express; server: Server }> {
     await initializeDatabase();
   } catch (error) {
     log("⚠️ Warning: Database initialization failed:", error);
+    log("💡 If using PostgreSQL, run: npm run db:push");
     // Continue anyway - schema might already exist
   }
 

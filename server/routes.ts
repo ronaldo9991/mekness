@@ -104,6 +104,10 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(400).json({ message: "Phone number, country, and city are required" });
       }
 
+      // Ensure database is ready
+      const { ensureDbReady } = await import("./db.js");
+      await ensureDbReady();
+
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
@@ -151,9 +155,20 @@ export async function registerRoutes(app: Express): Promise<void> {
       // Return user without password
       const { password: _, ...userWithoutPassword } = user;
       res.status(201).json({ user: userWithoutPassword });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Signup error:", error);
-      res.status(500).json({ message: "Failed to create account" });
+      const errorMessage = error?.message || "Failed to create account";
+      console.error("Full error details:", {
+        message: errorMessage,
+        stack: error?.stack,
+        code: error?.code,
+        detail: error?.detail,
+      });
+      res.status(500).json({ 
+        message: errorMessage.includes("relation") || errorMessage.includes("table") || errorMessage.includes("does not exist")
+          ? "Database tables not initialized. Please run migrations: npm run db:push"
+          : errorMessage
+      });
     }
   });
 
