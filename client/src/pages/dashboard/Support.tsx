@@ -38,16 +38,46 @@ export default function Support() {
   const [priority, setPriority] = useState("Medium");
   const [message, setMessage] = useState("");
 
-  // Fetch tickets
+  // Fetch tickets - removed auto-refresh to prevent constant reloading
   const { data: tickets = [], isLoading } = useQuery<SupportTicket[]>({
     queryKey: ["/api/support-tickets"],
-    refetchInterval: 15000, // Real-time updates every 15 seconds
+    refetchInterval: false, // Disabled auto-refresh - user can manually refresh if needed
+    retry: false, // Don't retry on 401 errors
+    queryFn: async () => {
+      const res = await fetch("/api/support-tickets", {
+        credentials: "include",
+      });
+      if (res.status === 401) {
+        // Return empty array instead of throwing - prevents error spam
+        return [];
+      }
+      if (!res.ok) {
+        throw new Error(`Failed to load tickets: ${res.statusText}`);
+      }
+      return await res.json();
+    },
   });
 
   // Create ticket mutation
   const createTicketMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest("POST", "/api/support-tickets", data);
+      const res = await fetch("/api/support-tickets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      
+      if (res.status === 401) {
+        throw new Error("You must be logged in to create a support ticket. Please sign in and try again.");
+      }
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: res.statusText }));
+        throw new Error(errorData.message || "Failed to create ticket");
+      }
+      
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/support-tickets"] });

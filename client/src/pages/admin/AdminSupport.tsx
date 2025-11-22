@@ -26,7 +26,8 @@ export default function AdminSupport() {
 
   const { data: tickets = [], isLoading } = useQuery<SupportTicket[]>({
     queryKey: ["/api/admin/support-tickets"],
-    refetchInterval: 30000, // Real-time updates every 30 seconds
+    refetchInterval: false, // Disabled auto-refresh - user can manually refresh if needed
+    retry: false, // Don't retry on 401 errors
   });
 
   const { data: users = [] } = useQuery<User[]>({

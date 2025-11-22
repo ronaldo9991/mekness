@@ -18,11 +18,24 @@ export default function DashboardHeader() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
 
-  // Fetch current user data
+  // Fetch current user data - handle 401 gracefully
   const { data: user, isLoading } = useQuery<UserType>({
     queryKey: ["/api/auth/check"],
     retry: false,
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    queryFn: async () => {
+      const res = await fetch("/api/auth/check", {
+        credentials: "include",
+      });
+      if (res.status === 401) {
+        // Return null instead of throwing - prevents error spam
+        return null;
+      }
+      if (!res.ok) {
+        throw new Error(`Failed to check auth: ${res.statusText}`);
+      }
+      return await res.json();
+    },
   });
 
   useEffect(() => {

@@ -38,6 +38,19 @@ export default function IBAccount() {
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/auth/check"],
+    retry: false,
+    queryFn: async () => {
+      const res = await fetch("/api/auth/check", {
+        credentials: "include",
+      });
+      if (res.status === 401) {
+        return null; // Return null instead of throwing
+      }
+      if (!res.ok) {
+        throw new Error(`Failed to check auth: ${res.statusText}`);
+      }
+      return await res.json();
+    },
   });
 
   const copyReferralLink = () => {
