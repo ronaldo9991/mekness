@@ -103,7 +103,7 @@ export { db, pool, dbInit };
 // Initialize database schema
 export async function initializeDatabase() {
   if (isPostgres) {
-    // For PostgreSQL, use drizzle-kit push or migrations
+    // For PostgreSQL, automatically create tables if they don't exist
     try {
       // Check if users table exists
       const result = await pool.query(`
@@ -117,12 +117,15 @@ export async function initializeDatabase() {
         return;
       }
       
-      // Schema will be created via migrations or drizzle-kit push
-      // Run migrations manually: npm run db:push
-      console.log('💡 To create tables, run: npm run db:push');
+      // Tables don't exist - create them automatically
+      console.log('🗄️ PostgreSQL tables not found, creating automatically...');
+      const { createPostgresTables } = await import('./pg-migrations.js');
+      await createPostgresTables(pool);
+      console.log('✅ PostgreSQL schema initialized automatically');
     } catch (error) {
       console.error('❌ Error initializing PostgreSQL schema:', error);
       console.warn('⚠️ Continuing startup, but database operations may fail until schema is created');
+      console.warn('💡 You can also run manually: npm run db:push');
     }
   } else {
     // SQLite initialization
