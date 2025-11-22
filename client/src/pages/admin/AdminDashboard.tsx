@@ -114,21 +114,27 @@ export default function AdminDashboard() {
           <Route path="/admin/create-admins">
             {(() => {
               // Normalize role check - handle various formats
-              const adminRole = String(admin?.role || "").toLowerCase().trim();
-              const isSuperAdmin = adminRole === "super_admin" || adminRole === "superadmin";
+              const adminRoleRaw = String(admin?.role || "").trim();
+              const adminRole = adminRoleRaw.toLowerCase().replace(/[-\s_]+/g, "_");
+              const isSuperAdmin = adminRole === "super_admin" || adminRole === "superadmin" || adminRoleRaw.toLowerCase() === "super admin";
               
               // Debug logging
               console.log("[AdminDashboard] Create Admins Route Check:", {
                 rawRole: admin?.role,
+                adminRoleRaw,
                 normalizedRole: adminRole,
                 isSuperAdmin,
                 adminId: admin?.id,
                 adminEmail: admin?.email,
+                adminFullName: admin?.fullName,
               });
               
               if (isSuperAdmin) {
+                console.log("[AdminDashboard] ✅ Allowing access to Create Admins page for super admin");
                 return <AdminCreation admin={admin} />;
               }
+              
+              console.log("[AdminDashboard] ❌ Blocking access - not super admin. Role:", adminRole);
               return (
                 <div className="flex items-center justify-center min-h-[60vh]">
                   <Card className="p-8 max-w-md w-full border-destructive/50">

@@ -161,14 +161,18 @@ export default function AdminSidebar({ admin }: AdminSidebarProps) {
   };
 
   const getRoleBadgeVariant = (role: string) => {
-    if (role === "super_admin") return "default";
-    if (role === "middle_admin") return "secondary";
+    // Normalize role for comparison
+    const normalizedRole = String(role || "").trim().toLowerCase().replace(/[-\s_]+/g, "_");
+    if (normalizedRole === "super_admin" || normalizedRole === "superadmin") return "default";
+    if (normalizedRole === "middle_admin" || normalizedRole === "middleadmin") return "secondary";
     return "outline";
   };
 
   const getRoleLabel = (role: string) => {
-    if (role === "super_admin") return "Super Admin";
-    if (role === "middle_admin") return "Middle Admin";
+    // Normalize role for comparison
+    const normalizedRole = String(role || "").trim().toLowerCase().replace(/[-\s_]+/g, "_");
+    if (normalizedRole === "super_admin" || normalizedRole === "superadmin") return "Super Admin";
+    if (normalizedRole === "middle_admin" || normalizedRole === "middleadmin") return "Middle Admin";
     return "Admin";
   };
 
@@ -219,7 +223,17 @@ export default function AdminSidebar({ admin }: AdminSidebarProps) {
                     className={item.disabled ? "opacity-50 cursor-not-allowed" : ""}
                   >
                     {item.disabled ? (
-                      <div className="flex items-center justify-between w-full cursor-not-allowed">
+                      <div 
+                        className="flex items-center justify-between w-full cursor-not-allowed opacity-50"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          toast({
+                            title: "Access Restricted",
+                            description: "This feature is only available for Super Administrators.",
+                            variant: "destructive",
+                          });
+                        }}
+                      >
                         <div className="flex items-center gap-2">
                           <item.icon className="w-4 h-4" />
                           <span>{item.title}</span>
@@ -232,7 +246,14 @@ export default function AdminSidebar({ admin }: AdminSidebarProps) {
                         )}
                       </div>
                     ) : (
-                      <a href={item.url} className="flex items-center justify-between w-full">
+                      <a 
+                        href={item.url} 
+                        className="flex items-center justify-between w-full"
+                        onClick={(e) => {
+                          // Don't prevent default - allow navigation
+                          console.log("[AdminSidebar] Navigating to:", item.url, "for role:", admin?.role);
+                        }}
+                      >
                         <div className="flex items-center gap-2">
                           <item.icon className="w-4 h-4" />
                           <span>{item.title}</span>
