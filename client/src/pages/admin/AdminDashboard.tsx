@@ -33,6 +33,17 @@ export default function AdminDashboard() {
   const { data: admin, isLoading, error } = useQuery<AdminUser>({
     queryKey: ["/api/admin/auth/me"],
     retry: false,
+    onSuccess: (data) => {
+      console.log("[AdminDashboard] Admin data received:", {
+        id: data?.id,
+        username: data?.username,
+        role: data?.role,
+        roleType: typeof data?.role,
+        hasRole: data && 'role' in data,
+        allKeys: data ? Object.keys(data) : [],
+        fullData: data,
+      });
+    },
   });
 
   useEffect(() => {

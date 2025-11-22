@@ -307,7 +307,17 @@ export class DbStorage implements IStorage {
 
   async getAdminUserByEmail(email: string): Promise<AdminUser | undefined> {
     const db = await getDb();
-    const result = await db.select().from(adminUsers).where(eq(adminUsers.email, email)).limit(1);
+    const result = await db.select({
+      id: adminUsers.id,
+      username: adminUsers.username,
+      password: adminUsers.password,
+      email: adminUsers.email,
+      fullName: adminUsers.fullName,
+      role: adminUsers.role,
+      enabled: adminUsers.enabled,
+      createdAt: adminUsers.createdAt,
+      createdBy: adminUsers.createdBy,
+    }).from(adminUsers).where(eq(adminUsers.email, email)).limit(1);
     return result[0];
   }
 
