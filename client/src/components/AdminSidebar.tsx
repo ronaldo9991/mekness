@@ -59,7 +59,8 @@ export default function AdminSidebar({ admin }: AdminSidebarProps) {
     queryKey: ["/api/admin/stats"],
   });
 
-  const getMenuItems = () => {
+  // Compute menu items - ensure it's reactive to admin changes
+  const menuItems = (() => {
     const baseItems = [
       { title: "Dashboard", icon: Home, url: "/admin/dashboard", badge: null },
       { title: "Clients", icon: Users, url: "/admin/clients", badge: null },
@@ -79,21 +80,36 @@ export default function AdminSidebar({ admin }: AdminSidebarProps) {
       { title: "Logs", icon: Activity, url: "/admin/logs", badge: null },
     ];
 
-    // Super admin gets additional items - check role explicitly
-    const isSuperAdmin = admin?.role === "super_admin" || admin?.role === "SUPER_ADMIN";
+    // Super admin gets additional items - check role explicitly with multiple checks
+    if (!admin) {
+      return baseItems;
+    }
+    
+    const adminRole = admin.role?.toLowerCase() || "";
+    const isSuperAdmin = adminRole === "super_admin" || adminRole === "superadmin";
+    
+    console.log("[AdminSidebar] Checking role:", {
+      adminRole,
+      isSuperAdmin,
+      adminObject: admin,
+      fullRole: admin.role
+    });
     
     if (isSuperAdmin) {
       // Insert Create Admins right after Dashboard for visibility
-      baseItems.splice(1, 0, { title: "Create Admins", icon: Shield, url: "/admin/create-admins", badge: null });
-      baseItems.push({ title: "Admin Management", icon: Users, url: "/admin/admins", badge: null });
+      const createAdminsItem = { title: "Create Admins", icon: Shield, url: "/admin/create-admins", badge: null };
+      const adminManagementItem = { title: "Admin Management", icon: Users, url: "/admin/admins", badge: null };
+      
+      // Insert after Dashboard
+      baseItems.splice(1, 0, createAdminsItem);
+      // Add Admin Management at the end
+      baseItems.push(adminManagementItem);
+      
+      console.log("[AdminSidebar] Added Create Admins and Admin Management items");
     }
 
-    // Middle admin and normal admin see filtered items based on permissions
-    // (This will be handled in the individual pages)
     return baseItems;
-  };
-
-  const menuItems = getMenuItems();
+  })();
 
   const handleLogout = async () => {
     try {
