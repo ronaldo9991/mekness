@@ -89,20 +89,26 @@ export default function AdminSidebar({ admin }: AdminSidebarProps) {
     
     // Normalize role check - handle various formats
     const adminRoleRaw = String(admin.role || "").trim();
-    const adminRoleNormalized = adminRoleRaw.toLowerCase().replace(/[-\s_]+/g, "_");
+    const adminRoleLower = adminRoleRaw.toLowerCase();
+    const adminRoleNormalized = adminRoleLower.replace(/[-\s_]+/g, "_");
+    
     // Check multiple variations: "super_admin", "superadmin", "super-admin", "Super Admin", etc.
     const isSuperAdmin = adminRoleNormalized === "super_admin" || 
                         adminRoleNormalized === "superadmin" ||
-                        adminRoleRaw.toLowerCase() === "super admin";
+                        adminRoleLower === "super admin" ||
+                        adminRoleLower.includes("super") && adminRoleLower.includes("admin") && !adminRoleLower.includes("middle") && !adminRoleLower.includes("normal");
     
     console.log("[AdminSidebar] Admin role check:", {
       adminRoleNormalized,
+      adminRoleLower,
       adminRoleRaw,
       rawRole: admin.role,
+      typeofRole: typeof admin.role,
       isSuperAdmin,
       adminId: admin.id,
       adminEmail: admin.email,
-      fullRole: admin.role
+      adminUsername: admin.username,
+      fullAdminObject: admin
     });
     
     // Always add Create Admins menu item
