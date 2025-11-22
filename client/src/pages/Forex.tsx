@@ -467,7 +467,7 @@ export default function Forex() {
             </p>
           </motion.div>
 
-          <div className="grid gap-10 md:grid-cols-2 xl:grid-cols-3 max-w-5xl mx-auto">
+          <div className="grid gap-8 sm:gap-10 md:grid-cols-3 max-w-6xl mx-auto">
             {/* Deposits & Withdrawals */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}

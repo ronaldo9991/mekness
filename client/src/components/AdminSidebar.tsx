@@ -63,60 +63,73 @@ export default function AdminSidebar({ admin }: AdminSidebarProps) {
   // Compute menu items - ensure it's reactive to admin changes using useMemo
   const menuItems = useMemo(() => {
     const baseItems = [
-      { title: "Dashboard", icon: Home, url: "/admin/dashboard", badge: null },
-      { title: "Clients", icon: Users, url: "/admin/clients", badge: null },
-      { title: "Countries", icon: Globe, url: "/admin/countries", badge: null },
-      { title: "Pending Documents", icon: FileText, url: "/admin/documents", badge: stats?.pendingDocuments },
-      { title: "Deposits", icon: Download, url: "/admin/deposits", badge: stats?.pendingDeposits },
-      { title: "Withdrawals", icon: ArrowUpDown, url: "/admin/withdrawals", badge: stats?.pendingWithdrawals },
-      { title: "Withdrawals OTP", icon: CreditCard, url: "/admin/withdrawals-otp", badge: null },
-      { title: "Funds Transfer", icon: Wallet, url: "/admin/fund-transfer", badge: null },
-      { title: "TopUp", icon: CreditCard, url: "/admin/topup", badge: null },
-      { title: "IB CB Wallets", icon: Wallet, url: "/admin/ib-cb-wallets", badge: null },
-      { title: "IB Referrals", icon: Users, url: "/admin/referrals", badge: null },
-      { title: "Commissions", icon: Wallet, url: "/admin/commissions", badge: null },
-      { title: "Management", icon: Settings, url: "/admin/management", badge: null },
-      { title: "Support", icon: MessageSquare, url: "/admin/support", badge: stats?.openTickets },
-      { title: "Reports", icon: FileText, url: "/admin/reports", badge: null },
-      { title: "Logs", icon: Activity, url: "/admin/logs", badge: null },
+      { title: "Dashboard", icon: Home, url: "/admin/dashboard", badge: null, disabled: false },
+      { title: "Clients", icon: Users, url: "/admin/clients", badge: null, disabled: false },
+      { title: "Countries", icon: Globe, url: "/admin/countries", badge: null, disabled: false },
+      { title: "Pending Documents", icon: FileText, url: "/admin/documents", badge: stats?.pendingDocuments, disabled: false },
+      { title: "Deposits", icon: Download, url: "/admin/deposits", badge: stats?.pendingDeposits, disabled: false },
+      { title: "Withdrawals", icon: ArrowUpDown, url: "/admin/withdrawals", badge: stats?.pendingWithdrawals, disabled: false },
+      { title: "Withdrawals OTP", icon: CreditCard, url: "/admin/withdrawals-otp", badge: null, disabled: false },
+      { title: "Funds Transfer", icon: Wallet, url: "/admin/fund-transfer", badge: null, disabled: false },
+      { title: "TopUp", icon: CreditCard, url: "/admin/topup", badge: null, disabled: false },
+      { title: "IB CB Wallets", icon: Wallet, url: "/admin/ib-cb-wallets", badge: null, disabled: false },
+      { title: "IB Referrals", icon: Users, url: "/admin/referrals", badge: null, disabled: false },
+      { title: "Commissions", icon: Wallet, url: "/admin/commissions", badge: null, disabled: false },
+      { title: "Management", icon: Settings, url: "/admin/management", badge: null, disabled: false },
+      { title: "Support", icon: MessageSquare, url: "/admin/support", badge: stats?.openTickets, disabled: false },
+      { title: "Reports", icon: FileText, url: "/admin/reports", badge: null, disabled: false },
+      { title: "Logs", icon: Activity, url: "/admin/logs", badge: null, disabled: false },
     ];
 
-    // Super admin gets additional items - check role explicitly with multiple checks
+    // Check if admin exists and determine if super admin
     if (!admin) {
       console.log("[AdminSidebar] No admin object, returning base items");
       return baseItems;
     }
     
-    const adminRole = (admin.role || "").toLowerCase().trim();
+    // Normalize role check - handle various formats
+    const adminRole = String(admin.role || "").toLowerCase().trim();
     const isSuperAdmin = adminRole === "super_admin" || adminRole === "superadmin";
     
     console.log("[AdminSidebar] Admin role check:", {
       adminRole,
+      rawRole: admin.role,
       isSuperAdmin,
       adminId: admin.id,
       adminEmail: admin.email,
       fullRole: admin.role
     });
     
+    // Always add Create Admins menu item, but mark as disabled for non-super-admins
+    const items = [...baseItems];
+    
+    const createAdminsItem = { 
+      title: "Create Admins", 
+      icon: Shield, 
+      url: "/admin/create-admins", 
+      badge: null,
+      disabled: !isSuperAdmin
+    };
+    
+    // Insert Create Admins right after Dashboard for visibility
+    items.splice(1, 0, createAdminsItem);
+    
+    // Add Admin Management menu item only for super admins
     if (isSuperAdmin) {
-      // Create new array to avoid mutating baseItems
-      const items = [...baseItems];
-      
-      // Insert Create Admins right after Dashboard for visibility
-      const createAdminsItem = { title: "Create Admins", icon: Shield, url: "/admin/create-admins", badge: null };
-      const adminManagementItem = { title: "Admin Management", icon: Users, url: "/admin/admins", badge: null };
-      
-      // Insert after Dashboard (at index 1)
-      items.splice(1, 0, createAdminsItem);
-      // Add Admin Management at the end
+      const adminManagementItem = { 
+        title: "Admin Management", 
+        icon: Users, 
+        url: "/admin/admins", 
+        badge: null,
+        disabled: false
+      };
       items.push(adminManagementItem);
-      
       console.log("[AdminSidebar] ✅ Added Create Admins and Admin Management items. Total items:", items.length);
-      return items;
+    } else {
+      console.log("[AdminSidebar] Added Create Admins (disabled). Role:", adminRole);
     }
-
-    console.log("[AdminSidebar] Not super admin, returning base items only");
-    return baseItems;
+    
+    return items;
   }, [admin, admin?.role, stats]);
 
   const handleLogout = async () => {
@@ -192,21 +205,38 @@ export default function AdminSidebar({ admin }: AdminSidebarProps) {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
-                    asChild
+                    asChild={!item.disabled}
+                    disabled={item.disabled}
                     isActive={location === item.url || location.startsWith(item.url + "/")}
                     data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
+                    className={item.disabled ? "opacity-50 cursor-not-allowed" : ""}
                   >
-                    <a href={item.url} className="flex items-center justify-between w-full">
-                      <div className="flex items-center gap-2">
-                        <item.icon className="w-4 h-4" />
-                        <span>{item.title}</span>
+                    {item.disabled ? (
+                      <div className="flex items-center justify-between w-full cursor-not-allowed">
+                        <div className="flex items-center gap-2">
+                          <item.icon className="w-4 h-4" />
+                          <span>{item.title}</span>
+                          <Badge variant="outline" className="ml-1 text-xs">Super Admin Only</Badge>
+                        </div>
+                        {item.badge !== null && item.badge !== undefined && item.badge > 0 && (
+                          <Badge variant="destructive" className="ml-auto">
+                            {item.badge}
+                          </Badge>
+                        )}
                       </div>
-                      {item.badge !== null && item.badge !== undefined && item.badge > 0 && (
-                        <Badge variant="destructive" className="ml-auto">
-                          {item.badge}
-                        </Badge>
-                      )}
-                    </a>
+                    ) : (
+                      <a href={item.url} className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-2">
+                          <item.icon className="w-4 h-4" />
+                          <span>{item.title}</span>
+                        </div>
+                        {item.badge !== null && item.badge !== undefined && item.badge > 0 && (
+                          <Badge variant="destructive" className="ml-auto">
+                            {item.badge}
+                          </Badge>
+                        )}
+                      </a>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

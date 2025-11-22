@@ -1,8 +1,11 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Route } from "wouter";
-import { Loader2 } from "lucide-react";
+import { Loader2, Shield } from "lucide-react";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import AdminSidebar from "@/components/AdminSidebar";
 import AdminDashboardOverview from "./AdminDashboardOverview";
 import AdminClients from "./AdminClients";
@@ -109,10 +112,48 @@ export default function AdminDashboard() {
             <AdminLogs />
           </Route>
           <Route path="/admin/create-admins">
-            {admin.role === "super_admin" && <AdminCreation admin={admin} />}
+            {(() => {
+              if (admin.role === "super_admin") {
+                return <AdminCreation admin={admin} />;
+              }
+              return (
+                <div className="flex items-center justify-center min-h-[60vh]">
+                  <Card className="p-8 max-w-md w-full border-destructive/50">
+                    <div className="text-center space-y-4">
+                      <Shield className="w-16 h-16 mx-auto text-destructive/70" />
+                      <h2 className="text-2xl font-bold text-destructive">Access Denied</h2>
+                      <p className="text-muted-foreground">
+                        Only Super Administrators can create admin accounts.
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-4">
+                        Your current role: <Badge variant="outline">{admin.role || "Admin"}</Badge>
+                      </p>
+                      <Button
+                        onClick={() => setLocation("/admin/dashboard")}
+                        variant="outline"
+                        className="mt-4"
+                      >
+                        Go to Dashboard
+                      </Button>
+                    </div>
+                  </Card>
+                </div>
+              );
+            })()}
           </Route>
           <Route path="/admin/admins">
-            {admin.role === "super_admin" && <SuperAdminDashboard admin={admin} />}
+            {admin.role === "super_admin" ? (
+              <SuperAdminDashboard admin={admin} />
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center space-y-4">
+                  <h2 className="text-2xl font-bold text-destructive">Access Denied</h2>
+                  <p className="text-muted-foreground">
+                    Only Super Administrators can manage admin accounts.
+                  </p>
+                </div>
+              </div>
+            )}
           </Route>
           <Route path="/admin">
             <AdminDashboardOverview admin={admin} />

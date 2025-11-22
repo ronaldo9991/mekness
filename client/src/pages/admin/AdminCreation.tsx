@@ -54,9 +54,10 @@ export default function AdminCreation({ admin }: AdminCreationProps) {
     countries?: string[];
   } | null>(null);
 
-  const { data: admins = [], isLoading: loadingAdmins } = useQuery<AdminUser[]>({
+  const { data: admins = [], isLoading: loadingAdmins, error: adminsError } = useQuery<AdminUser[]>({
     queryKey: ["/api/admin/admins"],
     refetchInterval: 60000,
+    retry: false,
   });
   
   // Fetch country assignments for middle admins
@@ -158,6 +159,52 @@ export default function AdminCreation({ admin }: AdminCreationProps) {
       description: "Credentials copied to clipboard",
     });
   };
+
+  // Show error message if authentication fails
+  if (adminsError) {
+    const errorMessage = (adminsError as Error)?.message || "Unknown error";
+    const isUnauthorized = errorMessage.includes("401") || errorMessage.includes("Unauthorized");
+    
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
+              Admin Creation
+            </h1>
+            <p className="text-muted-foreground">
+              Create and manage admin accounts for the system
+            </p>
+          </div>
+        </div>
+        <Card className="p-6 border-destructive">
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-destructive">Authentication Error</h2>
+            {isUnauthorized ? (
+              <div className="space-y-2">
+                <p className="text-muted-foreground">
+                  Your session has expired or you don't have permission to access this page.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Please log out and log back in as a Super Administrator.
+                </p>
+                <Button
+                  onClick={() => window.location.href = "/admin/login"}
+                  variant="destructive"
+                >
+                  Go to Login
+                </Button>
+              </div>
+            ) : (
+              <p className="text-muted-foreground">
+                Failed to load admin list: {errorMessage}
+              </p>
+            )}
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

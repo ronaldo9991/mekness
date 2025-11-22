@@ -92,17 +92,31 @@ async function bootstrap(): Promise<{ app: express.Express; server: Server }> {
   }
   
   // Configure session middleware (must be before routes)
+  // Detect if we're behind a proxy (Railway, Vercel, etc.)
+  const isProduction = process.env.NODE_ENV === "production";
+  const isBehindProxy = Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.VERCEL || process.env.PROXY);
+  
+  // Trust proxy for Railway/Vercel deployments
+  if (isBehindProxy || isProduction) {
+    app.set('trust proxy', 1);
+  }
+  
   app.use(session({
     store: sessionStore,
     secret: process.env.SESSION_SECRET || "mekness-secret-key-change-in-production",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false, // Railway uses HTTP internally, HTTPS is handled by Railway
+      // Use secure cookies in production (HTTPS), but Railway may proxy through HTTP internally
+      secure: isProduction && !process.env.RAILWAY_ENVIRONMENT ? true : false,
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-      sameSite: "lax",
-    }
+      sameSite: isProduction ? "lax" : "lax",
+      // Railway-specific: ensure cookie works across requests
+      domain: process.env.COOKIE_DOMAIN || undefined,
+    },
+    // Force save session on every request for Railway compatibility
+    rolling: true,
   }));
 
   // Wait for database connection to be established
