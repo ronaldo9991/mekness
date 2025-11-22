@@ -4,21 +4,21 @@ import { insertDepositSchema, insertWithdrawalSchema, insertDocumentSchema, inse
 import bcrypt from "bcryptjs";
 import { registerMT5Routes } from "./mt5-routes";
 import { mt5Service } from "./mt5-service";
+import Stripe from "stripe";
 
-// Fatoorah API Configuration
-const FATOORAH_API_KEY = process.env.FATOORAH_API_KEY || "";
-const FATOORAH_BASE_URL = process.env.FATOORAH_BASE_URL || "https://apitest.myfatoorah.com"; // Use https://api.myfatoorah.com for production
+// Stripe API Configuration
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
 
-// Initialize Fatoorah API client
-const fatoorahHeaders = {
-  "Content-Type": "application/json",
-  "Authorization": `Bearer ${FATOORAH_API_KEY}`,
-};
-
-if (FATOORAH_API_KEY) {
-  console.log("✓ Fatoorah initialized successfully");
+// Initialize Stripe client
+let stripe: Stripe | null = null;
+if (STRIPE_SECRET_KEY) {
+  stripe = new Stripe(STRIPE_SECRET_KEY, {
+    apiVersion: "2024-11-20.acacia",
+  });
+  console.log("✓ Stripe initialized successfully (Sandbox/Test Mode)");
 } else {
-  console.warn("⚠ Fatoorah not configured - payment features will be disabled");
+  console.warn("⚠ Stripe not configured - payment features will be disabled");
 }
 
 // Extend express-session types
@@ -385,8 +385,8 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Fatoorah - Create payment invoice
-  app.post("/api/fatoorah/create-invoice", async (req, res) => {
+  // Stripe - Create payment intent
+  app.post("/api/stripe/create-payment-intent", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId) {
@@ -399,8 +399,8 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(400).json({ message: "Minimum deposit is $10" });
       }
 
-      if (!FATOORAH_API_KEY) {
-        return res.status(500).json({ message: "Fatoorah is not configured" });
+      if (!stripe) {
+        return res.status(500).json({ message: "Stripe is not configured" });
       }
 
       const user = await storage.getUser(userId);
@@ -412,133 +412,148 @@ export async function registerRoutes(app: Express): Promise<void> {
       const deposit = await storage.createDeposit({
         userId,
         accountId: tradingAccountId,
-        merchant: paymentMethod === "crypto" ? "Fatoorah Crypto" : "Fatoorah",
+        merchant: paymentMethod === "crypto" ? "Stripe Crypto" : "Stripe",
         amount: amount.toString(),
         status: "Pending",
-        transactionId: "", // Will be updated after invoice creation
+        transactionId: "", // Will be updated after payment intent creation
       });
 
-      // Create Fatoorah invoice
-      const invoiceData = {
-        InvoiceAmount: amount,
-        CurrencyIso: "USD",
-        CustomerName: user.fullName || user.username || user.email,
-        CustomerEmail: user.email,
-        CustomerMobile: user.phone || "",
-        CallBackUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/dashboard/deposit?success=true&depositId=${deposit.id}`,
-        ErrorUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/dashboard/deposit?error=true&depositId=${deposit.id}`,
-        Language: "en",
-        DisplayCurrencyIso: "USD",
-        InvoiceItems: [
+      // Create Stripe Checkout Session (simpler than Payment Intent for redirect flow)
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      const successUrl = `${frontendUrl}/dashboard/deposit?success=true&payment_intent={CHECKOUT_SESSION_ID}&depositId=${deposit.id}`;
+      const cancelUrl = `${frontendUrl}/dashboard/deposit?error=true`;
+
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: paymentMethod === "crypto" 
+          ? ["card", "usdc", "usdc_polymer"] // Stripe supports crypto via Checkout
+          : ["card"],
+        line_items: [
           {
-            ItemName: "Trading Account Deposit",
-            Quantity: 1,
-            UnitPrice: amount,
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: "Trading Account Deposit",
+                description: `Deposit for ${user.email}`,
+              },
+              unit_amount: Math.round(amount * 100), // Convert to cents
+            },
+            quantity: 1,
           },
         ],
-        CustomerReference: deposit.id,
-        CustomerAddress: {
-          AddressLine: user.address || "",
-          City: user.city || "",
-          Country: user.country || "",
+        mode: "payment",
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        metadata: {
+          userId,
+          depositId: deposit.id,
+          tradingAccountId,
+          paymentMethod,
         },
-      };
-
-      const fatoorahResponse = await fetch(`${FATOORAH_BASE_URL}/v2/SendPayment`, {
-        method: "POST",
-        headers: fatoorahHeaders,
-        body: JSON.stringify(invoiceData),
+        customer_email: user.email,
       });
 
-      if (!fatoorahResponse.ok) {
-        const errorData = await fatoorahResponse.json();
-        console.error("Fatoorah invoice creation error:", errorData);
-        await storage.updateDepositStatus(deposit.id, "Rejected");
-        return res.status(500).json({ 
-          message: errorData.Message || "Failed to create payment invoice" 
-        });
-      }
-
-      const fatoorahData = await fatoorahResponse.json();
-      
-      if (fatoorahData.IsSuccess === false) {
-        console.error("Fatoorah error:", fatoorahData);
-        await storage.updateDepositStatus(deposit.id, "Rejected");
-        return res.status(500).json({ 
-          message: fatoorahData.Message || "Failed to create payment invoice" 
-        });
-      }
-
-      // Update deposit with invoice ID
-      const invoiceId = fatoorahData.Data.InvoiceId;
-      const invoiceURL = fatoorahData.Data.InvoiceURL;
-      
+      // Update deposit with session ID
       await storage.updateDeposit(deposit.id, {
-        transactionId: invoiceId.toString(),
+        transactionId: session.id,
       });
 
-      // Store Fatoorah payment in database (reusing stripe_payments table structure)
+      // Store Stripe payment in database
       await storage.createStripePayment({
         userId,
         depositId: deposit.id,
-        stripePaymentIntentId: invoiceId.toString(),
+        stripePaymentIntentId: session.id, // Using session ID as identifier
         amount: amount.toString(),
         currency: "USD",
         status: "pending",
         metadata: JSON.stringify({
-          invoiceId,
+          sessionId: session.id,
           paymentMethod,
           tradingAccountId,
         }),
       });
 
       res.json({
-        invoiceId,
-        invoiceURL,
+        sessionId: session.id,
+        url: session.url, // Redirect URL
         depositId: deposit.id,
       });
     } catch (error: any) {
-      console.error("Fatoorah invoice creation error:", error);
-      res.status(500).json({ message: error.message || "Failed to create payment invoice" });
+      console.error("Stripe payment intent creation error:", error);
+      res.status(500).json({ message: error.message || "Failed to create payment intent" });
     }
   });
 
-  // Fatoorah Webhook - Handle payment confirmations
-  app.post("/api/fatoorah/webhook", async (req, res) => {
+  // Stripe Webhook - Handle payment confirmations
+  // Note: This route must use raw body for signature verification
+  app.post("/api/stripe/webhook", async (req, res) => {
+    let event: Stripe.Event;
+
     try {
-      const { InvoiceId, InvoiceStatus, InvoiceValue, CustomerReference } = req.body;
-
-      if (!InvoiceId) {
-        return res.status(400).json({ message: "Missing InvoiceId" });
+      if (!stripe || !STRIPE_WEBHOOK_SECRET) {
+        return res.status(500).json({ message: "Stripe webhook not configured" });
       }
 
-      // Find deposit by invoice ID
-      const fatoorahPayment = await storage.getStripePaymentByIntentId(InvoiceId.toString());
-      if (!fatoorahPayment) {
-        console.warn(`Fatoorah webhook: Payment not found for invoice ${InvoiceId}`);
-        return res.status(404).json({ message: "Payment not found" });
+      // Verify webhook signature
+      const sig = req.headers["stripe-signature"] as string;
+      if (!sig) {
+        return res.status(400).json({ message: "Missing stripe-signature header" });
       }
 
-      const deposit = await storage.getDeposit(fatoorahPayment.depositId);
-      if (!deposit) {
-        return res.status(404).json({ message: "Deposit not found" });
+      // Use rawBody from express.json middleware (stored in req.rawBody)
+      const rawBody = (req as any).rawBody;
+      if (!rawBody) {
+        return res.status(400).json({ message: "Missing request body" });
       }
 
-      // Handle payment status
-      if (InvoiceStatus === "Paid") {
+      event = stripe.webhooks.constructEvent(rawBody, sig, STRIPE_WEBHOOK_SECRET);
+    } catch (err: any) {
+      console.error("Stripe webhook signature verification failed:", err.message);
+      return res.status(400).json({ message: `Webhook Error: ${err.message}` });
+    }
+
+    try {
+      // Handle the event
+      if (event.type === "checkout.session.completed") {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const sessionId = session.id;
+
+        // Only process if payment was successful
+        if (session.payment_status !== "paid") {
+          console.log(`Stripe webhook: Session ${sessionId} payment status is ${session.payment_status}, skipping`);
+          return res.json({ received: true });
+        }
+
+        // Find deposit by session ID
+        const stripePayment = await storage.getStripePaymentByIntentId(sessionId);
+        if (!stripePayment) {
+          console.warn(`Stripe webhook: Payment not found for session ${sessionId}`);
+          return res.status(404).json({ message: "Payment not found" });
+        }
+
+        const deposit = await storage.getDeposit(stripePayment.depositId);
+        if (!deposit) {
+          return res.status(404).json({ message: "Deposit not found" });
+        }
+
+        // Skip if already processed
+        if (deposit.status === "Completed") {
+          console.log(`Stripe webhook: Deposit ${deposit.id} already completed, skipping`);
+          return res.json({ received: true });
+        }
+
         // Update deposit status
-        await storage.updateDepositStatus(fatoorahPayment.depositId, "Approved");
-        await storage.updateStripePaymentStatus(fatoorahPayment.id, "succeeded");
+        await storage.updateDepositStatus(stripePayment.depositId, "Completed");
+        await storage.updateStripePaymentStatus(stripePayment.id, "succeeded");
 
         // Get metadata to find trading account
-        const metadata = fatoorahPayment.metadata ? JSON.parse(fatoorahPayment.metadata) : {};
+        const metadata = stripePayment.metadata ? JSON.parse(stripePayment.metadata) : {};
         const tradingAccountId = metadata.tradingAccountId || deposit.accountId;
 
         // Add amount to trading account
         if (tradingAccountId) {
           const account = await storage.getTradingAccount(tradingAccountId);
           if (account) {
-            const depositAmount = parseFloat(InvoiceValue || deposit.amount);
+            const depositAmount = parseFloat((session.amount_total || 0).toString()) / 100; // Convert from cents
             const newBalance = (parseFloat(account.balance) + depositAmount).toString();
             await storage.updateTradingAccount(tradingAccountId, { balance: newBalance });
 
@@ -548,7 +563,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                 await mt5Service.updateBalance(
                   account.accountId,
                   depositAmount,
-                  `Fatoorah deposit: ${InvoiceId}`
+                  `Stripe deposit: ${sessionId}`
                 );
                 console.log(`MT5 balance updated for account ${account.accountId}: +$${depositAmount}`);
               } catch (mt5Error) {
@@ -599,42 +614,48 @@ export async function registerRoutes(app: Express): Promise<void> {
             }
           }
         }
-      } else if (InvoiceStatus === "Failed" || InvoiceStatus === "Canceled") {
-        await storage.updateDepositStatus(fatoorahPayment.depositId, "Rejected");
-        await storage.updateStripePaymentStatus(fatoorahPayment.id, "failed");
+      } else if (event.type === "checkout.session.async_payment_failed") {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const sessionId = session.id;
+
+        const stripePayment = await storage.getStripePaymentByIntentId(sessionId);
+        if (stripePayment) {
+          await storage.updateDepositStatus(stripePayment.depositId, "Rejected");
+          await storage.updateStripePaymentStatus(stripePayment.id, "failed");
+        }
       }
 
       res.json({ received: true });
     } catch (error: any) {
-      console.error("Fatoorah webhook error:", error);
+      console.error("Stripe webhook error:", error);
       res.status(500).json({ message: error.message || "Webhook processing failed" });
     }
   });
 
-  // Fatoorah - Check payment status (for callback URL)
-  app.get("/api/fatoorah/payment-status/:invoiceId", async (req, res) => {
+  // Stripe - Check payment status (for callback URL)
+  app.get("/api/stripe/payment-status/:sessionId", async (req, res) => {
     try {
-      const { invoiceId } = req.params;
+      const { sessionId } = req.params;
 
-      if (!FATOORAH_API_KEY) {
-        return res.status(500).json({ message: "Fatoorah is not configured" });
+      if (!stripe) {
+        return res.status(500).json({ message: "Stripe is not configured" });
       }
 
-      // Get payment status from Fatoorah
-      const response = await fetch(`${FATOORAH_BASE_URL}/v2/GetPaymentStatus`, {
-        method: "POST",
-        headers: fatoorahHeaders,
-        body: JSON.stringify({ Key: invoiceId, KeyType: "InvoiceId" }),
+      // Get checkout session from Stripe
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+      // Find deposit by session ID
+      const stripePayment = await storage.getStripePaymentByIntentId(sessionId);
+      
+      res.json({
+        sessionId: session.id,
+        status: session.payment_status === "paid" ? "succeeded" : session.payment_status,
+        amount: (session.amount_total || 0) / 100, // Convert from cents
+        currency: session.currency || "usd",
+        depositId: stripePayment?.depositId || null,
       });
-
-      if (!response.ok) {
-        return res.status(500).json({ message: "Failed to get payment status" });
-      }
-
-      const data = await response.json();
-      res.json(data);
     } catch (error: any) {
-      console.error("Fatoorah payment status error:", error);
+      console.error("Stripe payment status error:", error);
       res.status(500).json({ message: error.message || "Failed to get payment status" });
     }
   });

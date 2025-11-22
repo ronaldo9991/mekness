@@ -39,8 +39,13 @@ NODE_ENV=production
 PORT=5000
 
 # Optional: Payment APIs
-FATOORAH_API_KEY=your_fatoorah_key
-FATOORAH_BASE_URL=https://api.myfatoorah.com
+# Stripe Payment Gateway (Sandbox/Test Mode)
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+
+# Frontend URL (for Stripe redirects)
+FRONTEND_URL=https://yourdomain.com
 
 # Optional: MT5 Integration
 MT5_ENABLED=false
