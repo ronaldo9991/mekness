@@ -167,9 +167,11 @@ export default function SuperAdminDashboard({ admin }: SuperAdminDashboardProps)
       });
     },
     onError: (error: any) => {
+      console.error("Admin creation error:", error);
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to create admin";
       toast({
         title: "Error",
-        description: error.message || "Failed to create admin",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -455,14 +457,20 @@ export default function SuperAdminDashboard({ admin }: SuperAdminDashboardProps)
                 Create New Admin
               </Button>
             </DialogTrigger>
-          <DialogContent className="glass-card max-w-md">
+          <DialogContent className="glass-card max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Create New Admin</DialogTitle>
               <DialogDescription>
-                Add a new administrator to the system
+                Add a new administrator to the system. Fill in all required fields.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleCreateAdmin();
+              }}
+              className="space-y-4"
+            >
               <div>
                 <Label htmlFor="username">Username</Label>
                 <Input
@@ -537,7 +545,7 @@ export default function SuperAdminDashboard({ admin }: SuperAdminDashboardProps)
               )}
               
               <Button
-                onClick={handleCreateAdmin}
+                type="submit"
                 className="w-full"
                 disabled={createAdminMutation.isPending}
                 data-testid="button-submit-create-admin"
@@ -551,7 +559,7 @@ export default function SuperAdminDashboard({ admin }: SuperAdminDashboardProps)
                   "Create Admin"
                 )}
               </Button>
-            </div>
+            </form>
           </DialogContent>
         </Dialog>
         </div>

@@ -765,9 +765,10 @@ export async function registerRoutes(app: Express): Promise<void> {
       });
       
       res.status(201).json(document);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Document upload error:", error);
-      res.status(400).json({ message: "Invalid request data" });
+      const errorMessage = error?.message || "Invalid request data";
+      res.status(400).json({ message: errorMessage });
     }
   });
 
@@ -2621,9 +2622,10 @@ export async function registerRoutes(app: Express): Promise<void> {
       // For now, we'll skip admin notifications as they can see tickets in the admin panel
 
       res.status(201).json(ticket);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to create support ticket:", error);
-      res.status(500).json({ message: "Failed to create support ticket" });
+      const errorMessage = error?.message || "Failed to create support ticket";
+      res.status(500).json({ message: errorMessage });
     }
   });
 
