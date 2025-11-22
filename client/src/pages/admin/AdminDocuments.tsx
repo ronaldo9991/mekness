@@ -29,9 +29,11 @@ export default function AdminDocuments({ admin }: AdminDocumentsProps) {
   const [viewDocDialogOpen, setViewDocDialogOpen] = useState(false);
   const [viewingDoc, setViewingDoc] = useState<Document | null>(null);
 
-  const { data: documents = [], isLoading: loadingDocs } = useQuery<Document[]>({
+  const { data: documents = [], isLoading: loadingDocs, error: documentsError } = useQuery<Document[]>({
     queryKey: ["/api/admin/documents"],
-    refetchInterval: 15000,
+    refetchInterval: 10000, // Refetch every 10 seconds for faster updates
+    retry: 3, // Retry 3 times on failure
+    staleTime: 5000, // Consider data stale after 5 seconds
   });
 
   const { data: users = [] } = useQuery<User[]>({
@@ -108,6 +110,17 @@ export default function AdminDocuments({ admin }: AdminDocumentsProps) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="ml-4 text-muted-foreground">Loading documents...</p>
+      </div>
+    );
+  }
+
+  if (documentsError) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Card className="p-6 border-red-500/30">
+          <p className="text-red-400">Error loading documents. Please refresh the page.</p>
+        </Card>
       </div>
     );
   }

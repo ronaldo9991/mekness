@@ -1635,11 +1635,38 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       if (!(await requireAdmin(req, res))) return;
 
-      const documents = await storage.getAllDocuments();
-      console.log(`[DEBUG] Fetching all documents: Found ${documents.length} documents`);
-      if (documents.length > 0) {
-        console.log(`[DEBUG] First document:`, JSON.stringify(documents[0], null, 2));
+      const adminId = getCurrentAdminId(req)!;
+      const admin = await storage.getAdminUser(adminId);
+      
+      let documents: Document[];
+      
+      if (admin!.role === "super_admin") {
+        // Super admin sees all documents
+        documents = await storage.getAllDocuments();
+      } else if (admin!.role === "middle_admin") {
+        // Middle admin sees documents from users in assigned countries
+        const assignments = await storage.getAdminCountryAssignments(adminId);
+        const countries = assignments.map(a => a.country);
+        
+        const allUsers = await storage.getAllUsers();
+        const userIds = allUsers
+          .filter(user => user.country && countries.includes(user.country))
+          .map(user => user.id);
+        
+        const allDocuments = await storage.getAllDocuments();
+        documents = allDocuments.filter(doc => userIds.includes(doc.userId));
+      } else {
+        // Normal admin sees all documents
+        documents = await storage.getAllDocuments();
       }
+      
+      // Sort by uploaded date (newest first)
+      documents.sort((a, b) => {
+        const dateA = a.uploadedAt ? new Date(a.uploadedAt).getTime() : 0;
+        const dateB = b.uploadedAt ? new Date(b.uploadedAt).getTime() : 0;
+        return dateB - dateA;
+      });
+      
       res.json(documents);
     } catch (error) {
       console.error("Failed to fetch documents:", error);

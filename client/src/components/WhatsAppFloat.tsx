@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function WhatsAppFloat() {
   const [isVisible, setIsVisible] = useState(true);
   const [showTooltip, setShowTooltip] = useState(false);
-  const whatsappNumber = "+971545510007"; // +971 54 551 0007
+  const whatsappNumber = "+971547199005"; // +971 54 719 9005
   const message = "Hi, I need help with Mekness Trading";
 
   useEffect(() => {

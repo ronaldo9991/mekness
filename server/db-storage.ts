@@ -238,7 +238,13 @@ export class DbStorage implements IStorage {
 
   async getAllDocuments(): Promise<Document[]> {
     const db = await getDb();
-    return await db.select().from(documents).orderBy(desc(documents.uploadedAt));
+    try {
+      const result = await db.select().from(documents).orderBy(desc(documents.uploadedAt));
+      return result || [];
+    } catch (error) {
+      console.error("Error fetching all documents:", error);
+      return [];
+    }
   }
 
   // Notifications
