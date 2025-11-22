@@ -256,8 +256,10 @@ export default function AdminSidebar({ admin }: AdminSidebarProps) {
                         href={item.url} 
                         className="flex items-center justify-between w-full"
                         onClick={(e) => {
-                          // Don't prevent default - allow navigation
-                          console.log("[AdminSidebar] Navigating to:", item.url, "for role:", admin?.role);
+                          // Use wouter navigation for proper client-side routing
+                          e.preventDefault();
+                          console.log("[AdminSidebar] Navigating to:", item.title, "URL:", item.url, "Role:", admin?.role, "Disabled:", item.disabled);
+                          setLocation(item.url);
                         }}
                       >
                         <div className="flex items-center gap-2">
