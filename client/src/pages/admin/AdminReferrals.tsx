@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Users, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Loader2, Users, CheckCircle2, XCircle, Clock, DollarSign, Settings, Send } from "lucide-react";
 import DataTable from "@/components/DataTable";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 interface Referral {
   id: string;
@@ -41,6 +42,12 @@ export default function AdminReferrals() {
   const [selectedReferral, setSelectedReferral] = useState<Referral | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [isRejecting, setIsRejecting] = useState(false);
+  const [commissionDialogOpen, setCommissionDialogOpen] = useState(false);
+  const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
+  const [selectedReferrerId, setSelectedReferrerId] = useState<string | null>(null);
+  const [commissionRate, setCommissionRate] = useState("");
+  const [payoutAmount, setPayoutAmount] = useState("");
+  const [payoutNotes, setPayoutNotes] = useState("");
 
   const { data: referrals = [], isLoading } = useQuery<Referral[]>({
     queryKey: ["/api/admin/referrals"],
@@ -94,6 +101,55 @@ export default function AdminReferrals() {
         variant: "destructive",
       });
       setIsRejecting(false);
+    },
+  });
+
+  const updateCommissionMutation = useMutation({
+    mutationFn: async ({ referrerId, rate }: { referrerId: string; rate: string }) => {
+      return await apiRequest("PATCH", `/api/admin/referrals/${referrerId}/commission-rate`, { commissionRate: rate });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/ib/stats"] });
+      setCommissionDialogOpen(false);
+      setSelectedReferrerId(null);
+      setCommissionRate("");
+      toast({
+        title: "Commission Rate Updated",
+        description: "Commission rate has been updated successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to update commission rate",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const payoutMutation = useMutation({
+    mutationFn: async ({ referrerId, amount, notes }: { referrerId: string; amount: string; notes: string }) => {
+      return await apiRequest("POST", `/api/admin/referrals/${referrerId}/payout`, { amount, notes });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/ib/stats"] });
+      setPayoutDialogOpen(false);
+      setSelectedReferrerId(null);
+      setPayoutAmount("");
+      setPayoutNotes("");
+      toast({
+        title: "Payout Processed",
+        description: "Money has been sent to IB broker successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to process payout",
+        variant: "destructive",
+      });
     },
   });
 
@@ -193,7 +249,7 @@ export default function AdminReferrals() {
       key: "actions",
       label: "Actions",
       render: (_: any, row: Referral) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {row.referralStatus === "Pending" && (
             <>
               <Button
@@ -216,9 +272,35 @@ export default function AdminReferrals() {
             </>
           )}
           {row.referralStatus === "Accepted" && (
-            <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-              Accepted
-            </Badge>
+            <>
+              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                Accepted
+              </Badge>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setSelectedReferrerId(row.referrerId);
+                  setCommissionDialogOpen(true);
+                }}
+                className="ml-2"
+              >
+                <Settings className="w-3 h-3 mr-1" />
+                Commission
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setSelectedReferrerId(row.referrerId);
+                  setPayoutDialogOpen(true);
+                }}
+                className="ml-1"
+              >
+                <Send className="w-3 h-3 mr-1" />
+                Payout
+              </Button>
+            </>
           )}
           {row.referralStatus === "Rejected" && (
             <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
@@ -389,6 +471,162 @@ export default function AdminReferrals() {
                       Accept
                     </>
                   )}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Commission Rate Dialog */}
+      <Dialog open={commissionDialogOpen} onOpenChange={setCommissionDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Commission Rate</DialogTitle>
+            <DialogDescription>
+              Set the commission rate for this IB broker. The rate is a percentage (0-100) of each deposit made by their referrals.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="commissionRate">Commission Rate (%)</Label>
+              <Input
+                id="commissionRate"
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                placeholder="5.0"
+                value={commissionRate}
+                onChange={(e) => setCommissionRate(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Enter a value between 0 and 100. Example: 5.0 for 5% commission.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCommissionDialogOpen(false);
+                setSelectedReferrerId(null);
+                setCommissionRate("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!selectedReferrerId || !commissionRate) {
+                  toast({
+                    title: "Error",
+                    description: "Please enter a commission rate",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                updateCommissionMutation.mutate({
+                  referrerId: selectedReferrerId,
+                  rate: commissionRate,
+                });
+              }}
+              disabled={updateCommissionMutation.isPending}
+              className="bg-primary hover:bg-primary/90"
+            >
+              {updateCommissionMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <Settings className="w-4 h-4 mr-2" />
+                  Update Rate
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Payout Dialog */}
+      <Dialog open={payoutDialogOpen} onOpenChange={setPayoutDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Money to IB Broker</DialogTitle>
+            <DialogDescription>
+              Transfer money from the IB broker's wallet to their broker account. This will deduct the amount from their IB wallet balance.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="payoutAmount">Amount (USD)</Label>
+              <Input
+                id="payoutAmount"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={payoutAmount}
+                onChange={(e) => setPayoutAmount(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="payoutNotes">Notes (Optional)</Label>
+              <Textarea
+                id="payoutNotes"
+                placeholder="Add any notes about this payout..."
+                value={payoutNotes}
+                onChange={(e) => setPayoutNotes(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setPayoutDialogOpen(false);
+                setSelectedReferrerId(null);
+                setPayoutAmount("");
+                setPayoutNotes("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!selectedReferrerId || !payoutAmount || parseFloat(payoutAmount) <= 0) {
+                  toast({
+                    title: "Error",
+                    description: "Please enter a valid amount",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                payoutMutation.mutate({
+                  referrerId: selectedReferrerId,
+                  amount: payoutAmount,
+                  notes: payoutNotes,
+                });
+              }}
+              disabled={payoutMutation.isPending}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {payoutMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Send Money
                 </>
               )}
             </Button>

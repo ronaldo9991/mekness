@@ -25,25 +25,25 @@ export default function WhatIsForex() {
       icon: Globe,
       title: "World's Largest Financial Market",
       description: "Forex is the largest and most liquid financial market globally, with over $5.5 trillion traded daily. Connect with millions of traders worldwide and access unprecedented opportunities.",
-      image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80"
+      image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&q=75&auto=format&fit=crop"
     },
     {
       icon: Clock,
       title: "24/7 Market Access",
       description: "Unlike stock markets, forex operates 24 hours a day, 5 days a week across different time zones. Trade whenever it suits you - morning, afternoon, or night.",
-      image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80"
+      image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&q=75&auto=format&fit=crop"
     },
     {
       icon: TrendingUp,
       title: "Trade Both Directions",
       description: "Profit from both rising and falling markets. Go long (buy) when you expect prices to rise, or go short (sell) when you anticipate a decline. Maximum flexibility for any market condition.",
-      image: "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=800&q=80"
+      image: "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=600&q=75&auto=format&fit=crop"
     },
     {
       icon: Zap,
       title: "High Liquidity & Fast Execution",
       description: "Execute trades in milliseconds with tight spreads. The forex market's high liquidity ensures your orders are filled quickly at the best available prices.",
-      image: "https://images.unsplash.com/photo-1642790106117-e829e14a795f?w=800&q=80"
+      image: "https://images.unsplash.com/photo-1642790106117-e829e14a795f?w=600&q=75&auto=format&fit=crop"
     },
   ];
 
@@ -93,7 +93,7 @@ export default function WhatIsForex() {
         <ParticleField count={100} className="opacity-40" />
         <div className="absolute inset-0 bg-gradient-to-br from-black via-background to-background"></div>
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1920&q=80')] bg-cover bg-center opacity-10"></div>
+          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=75&auto=format&fit=crop')] bg-cover bg-center opacity-10"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent"></div>
         </div>
 
@@ -214,8 +214,9 @@ export default function WhatIsForex() {
               className="relative h-[400px] rounded-2xl overflow-hidden shadow-[0_0_30px_rgba(212,175,55,0.35),0_0_60px_rgba(212,175,55,0.2),0_0_90px_rgba(212,175,55,0.1)] hover:shadow-[0_0_40px_rgba(212,175,55,0.45),0_0_80px_rgba(212,175,55,0.25),0_0_120px_rgba(212,175,55,0.15)] transition-shadow duration-500"
             >
               <motion.img 
-                src="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80" 
+                src="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&q=75&auto=format&fit=crop" 
                 alt="Global forex trading"
+                loading="lazy"
                 className="w-full h-full object-cover"
                 whileHover={{ scale: 1.1 }}
                 transition={{ duration: 0.7 }}
@@ -400,7 +401,7 @@ export default function WhatIsForex() {
             transition={{ duration: 0.6 }}
           >
             <Card className="glass-morphism-strong border-primary/20 p-8 md:p-12 text-center relative overflow-hidden">
-              <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1642790106117-e829e14a795f?w=1920&q=80')] bg-cover bg-center opacity-5"></div>
+              <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1642790106117-e829e14a795f?w=800&q=75&auto=format&fit=crop')] bg-cover bg-center opacity-5"></div>
               <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/10"></div>
               <div className="relative z-10">
                 <h2 className="text-3xl md:text-4xl font-bold mb-4">

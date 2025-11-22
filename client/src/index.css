@@ -553,14 +553,14 @@
   /* Enhanced Glassmorphism */
   .glass-morphism {
     background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(12px) saturate(180%); /* Reduced from 20px - 40% less expensive */
     border: 1px solid rgba(212, 175, 55, 0.2);
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   }
 
   .glass-morphism-strong {
     background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(24px) saturate(200%);
+    backdrop-filter: blur(16px) saturate(200%); /* Reduced from 24px - 33% less expensive */
     border: 1px solid rgba(212, 175, 55, 0.3);
     box-shadow: 
       0 8px 32px 0 rgba(0, 0, 0, 0.5),
@@ -1025,13 +1025,13 @@
     transform: translateZ(0);
   }
 
-  /* Optimize blur effects - reduce for better performance */
+  /* Optimize blur effects - reduced for better performance */
   .blur-3xl {
-    filter: blur(48px);
+    filter: blur(24px); /* Reduced from 48px - 50% less expensive */
   }
 
   .blur-2xl {
-    filter: blur(32px);
+    filter: blur(16px); /* Reduced from 32px - 50% less expensive */
   }
 
   /* Text gold glow - optimized */

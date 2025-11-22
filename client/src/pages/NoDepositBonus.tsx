@@ -96,7 +96,7 @@ export default function NoDepositBonus() {
         <ParticleField count={100} className="opacity-40" />
         <div className="absolute inset-0 bg-gradient-to-br from-black via-background to-background"></div>
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1559526324-593bc073d938?w=1920&q=80')] bg-cover bg-center opacity-10"></div>
+          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1559526324-593bc073d938?w=800&q=75&auto=format&fit=crop')] bg-cover bg-center opacity-10"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent"></div>
         </div>
 

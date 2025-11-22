@@ -11,46 +11,46 @@ import {
   Globe, Shield, Zap, ArrowRight, Activity, Target, 
   TrendingDown, Coins, Calendar,
   AlertTriangle, Percent, Layers, ArrowUpCircle,
-  ArrowDownCircle, Minus, CircleDollarSign, Signal
+  ArrowDownCircle, Minus, CircleDollarSign, Signal, X
 } from "lucide-react";
 import { Link } from "wouter";
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
+import React from "react";
 
 export default function ForexPedia() {
   const [searchTerm, setSearchTerm] = useState("");
   const [openCardIndex, setOpenCardIndex] = useState<number | null>(null);
-  const detailsRefs = useRef<(HTMLDetailsElement | null)[]>([]);
 
   const categories = [
     { 
       name: "Trading Basics", 
       count: 45, 
-      image: "https://images.unsplash.com/photo-1556740749-887f6717d7e4?w=600&q=80&auto=format&fit=crop" 
+      image: "https://images.unsplash.com/photo-1556740749-887f6717d7e4?w=600&q=75&auto=format&fit=crop" 
     },
     { 
       name: "Market Analysis", 
       count: 38, 
-      image: "https://images.unsplash.com/photo-1483478550801-ceba5fe50e8e?w=600&q=80&auto=format&fit=crop" 
+      image: "https://images.unsplash.com/photo-1483478550801-ceba5fe50e8e?w=600&q=75&auto=format&fit=crop" 
     },
     { 
       name: "Trading Strategies", 
       count: 52, 
-      image: "https://images.unsplash.com/photo-1454165205744-3b78555e5572?w=600&q=80&auto=format&fit=crop" 
+      image: "https://images.unsplash.com/photo-1454165205744-3b78555e5572?w=600&q=75&auto=format&fit=crop" 
     },
     { 
       name: "Risk Management", 
       count: 29, 
-      image: "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?w=600&q=80&auto=format&fit=crop" 
+      image: "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?w=600&q=75&auto=format&fit=crop" 
     },
     { 
       name: "Technical Indicators", 
       count: 67, 
-      image: "https://images.unsplash.com/photo-1559526324-593bc073d938?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+      image: "https://images.unsplash.com/photo-1559526324-593bc073d938?w=600&q=75&auto=format&fit=crop" 
     },
     { 
       name: "Currency Pairs", 
       count: 34, 
-      image: "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+      image: "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=600&q=75&auto=format&fit=crop" 
     },
   ];
 
@@ -231,49 +231,37 @@ export default function ForexPedia() {
     term.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Calculate which row a card is in based on screen size
-  const getRowIndex = (index: number, columns: number) => {
-    return Math.floor(index / columns);
-  };
-
-  // Handle card toggle - close others in same row when a card opens
-  const handleCardToggle = (index: number) => {
-    const clickedDetails = detailsRefs.current[index];
-    
-    if (!clickedDetails) return;
-    
-    // Only proceed if the card is being opened
-    if (!clickedDetails.open) return;
-    
-    const lgColumns = 3;
-    const mdColumns = 2;
-    
-    // Determine which columns to use based on screen width
-    const screenWidth = window.innerWidth;
-    let columns = 1; // mobile default
-    if (screenWidth >= 1024) columns = lgColumns; // lg breakpoint
-    else if (screenWidth >= 768) columns = mdColumns; // md breakpoint
-    
-    const clickedRow = getRowIndex(index, columns);
-    
-    // Close all other cards in the same row
-    filteredTerms.forEach((_, idx) => {
-      const cardRow = getRowIndex(idx, columns);
-      if (cardRow === clickedRow && idx !== index) {
-        const detailsElement = detailsRefs.current[idx];
-        if (detailsElement && detailsElement.open) {
-          detailsElement.open = false;
-        }
-      }
-    });
-    
+  // Handle card click - open popup
+  const handleCardClick = (index: number) => {
     setOpenCardIndex(index);
   };
 
-  // Update refs array when filteredTerms changes
+  // Close popup
+  const closePopup = () => {
+    setOpenCardIndex(null);
+  };
+
+  // Close popup when clicking outside
   useEffect(() => {
-    detailsRefs.current = detailsRefs.current.slice(0, filteredTerms.length);
-  }, [filteredTerms.length]);
+    const handleClickOutside = (e: MouseEvent) => {
+      if (openCardIndex !== null) {
+        const target = e.target as HTMLElement;
+        if (target.closest('.forex-term-popup') === null && target.closest('.forex-term-card') === null) {
+          closePopup();
+        }
+      }
+    };
+
+    if (openCardIndex !== null) {
+      document.addEventListener('click', handleClickOutside);
+      document.body.style.overflow = 'hidden'; // Prevent body scroll when popup is open
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      document.body.style.overflow = 'unset';
+    };
+  }, [openCardIndex]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -285,7 +273,7 @@ export default function ForexPedia() {
         <ParticleField count={80} className="opacity-30" />
         <div className="absolute inset-0 bg-gradient-to-br from-black via-background to-background"></div>
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1920&q=80')] bg-cover bg-center opacity-10"></div>
+          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&q=75&auto=format&fit=crop')] bg-cover bg-center opacity-10"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent"></div>
         </div>
 
@@ -416,21 +404,13 @@ export default function ForexPedia() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 justify-items-center">
             {filteredTerms.map((item, index) => (
-              <motion.details
+              <div
                 key={index}
-                ref={(el) => (detailsRefs.current[index] = el)}
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.4, delay: Math.min(index * 0.02, 0.3) }}
-                whileHover={{ scale: 1.02, y: -4 }}
-                className="glass-morphism-strong border border-primary/20 rounded-2xl p-5 group cursor-pointer hover:border-primary/50 transition-all duration-300 w-full shadow-[0_0_30px_rgba(212,175,55,0.35),0_0_60px_rgba(212,175,55,0.2),0_0_90px_rgba(212,175,55,0.1)] hover:shadow-[0_0_40px_rgba(212,175,55,0.45),0_0_80px_rgba(212,175,55,0.25),0_0_120px_rgba(212,175,55,0.15)] transition-shadow duration-500"
-                onToggle={() => handleCardToggle(index)}
+                onClick={() => handleCardClick(index)}
+                className="forex-term-card glass-morphism-strong border border-primary/20 rounded-2xl p-5 group cursor-pointer hover:border-primary/50 transition-all duration-300 w-full shadow-[0_0_20px_rgba(212,175,55,0.2)] hover:shadow-[0_0_30px_rgba(212,175,55,0.3)]"
               >
-                <summary 
-                  className="flex items-start gap-4 text-left font-semibold hover:text-primary transition-colors list-none"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center flex-shrink-0 animate-pulse-glow">
+                <div className="flex items-start gap-4 text-left font-semibold">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center flex-shrink-0">
                     <item.icon className="w-6 h-6 text-primary" />
                   </div>
                   <div className="flex-1">
@@ -439,31 +419,89 @@ export default function ForexPedia() {
                       {item.category}
                     </span>
                   </div>
-                  <span className="text-primary text-sm group-open:rotate-180 transition-transform flex-shrink-0 mt-2">▼</span>
-                </summary>
-                <div className="mt-4 pt-4 border-t border-primary/10 space-y-3">
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {item.definition}
-                  </p>
-                  {item.relatedTerms.length > 0 && (
-                    <div>
-                      <div className="text-xs text-muted-foreground mb-2 font-semibold flex items-center gap-2">
-                        <div className="w-4 h-0.5 bg-primary/30"></div>
-                        Related Terms
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {item.relatedTerms.map((related, idx) => (
-                          <span key={idx} className="text-xs bg-primary/5 text-primary px-2.5 py-1 rounded-lg border border-primary/20 hover:bg-primary/10 transition-colors">
-                            {related}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  <span className="text-primary text-sm flex-shrink-0 mt-2">▶</span>
                 </div>
-              </motion.details>
+              </div>
             ))}
           </div>
+
+          {/* Popup Modal */}
+          {openCardIndex !== null && filteredTerms[openCardIndex] && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              {/* Backdrop */}
+              <div 
+                className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                onClick={closePopup}
+              />
+              
+              {/* Popup Content */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                className="forex-term-popup relative z-10 glass-morphism-strong border border-primary/30 rounded-3xl p-6 md:p-8 max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-[0_0_40px_rgba(212,175,55,0.4),0_0_80px_rgba(212,175,55,0.2)]"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Close Button */}
+                <button
+                  onClick={closePopup}
+                  className="absolute top-4 right-4 w-8 h-8 rounded-full bg-primary/10 hover:bg-primary/20 border border-primary/30 flex items-center justify-center text-primary transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+
+                {/* Header */}
+                <div className="flex items-start gap-4 mb-6 pr-8">
+                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center flex-shrink-0">
+                    {React.createElement(filteredTerms[openCardIndex].icon, { className: "w-8 h-8 text-primary" })}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-2xl md:text-3xl font-bold text-gradient-gold text-glow-gold mb-2">
+                      {filteredTerms[openCardIndex].term}
+                    </h3>
+                    <span className="text-xs text-primary bg-primary/10 px-3 py-1.5 rounded-full font-medium">
+                      {filteredTerms[openCardIndex].category}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Definition */}
+                <div className="mb-6">
+                  <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
+                    {filteredTerms[openCardIndex].definition}
+                  </p>
+                </div>
+
+                {/* Related Terms */}
+                {filteredTerms[openCardIndex].relatedTerms.length > 0 && (
+                  <div className="pt-6 border-t border-primary/10">
+                    <div className="text-sm text-muted-foreground mb-3 font-semibold flex items-center gap-2">
+                      <div className="w-8 h-0.5 bg-primary/30"></div>
+                      Related Terms
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {filteredTerms[openCardIndex].relatedTerms.map((related, idx) => (
+                        <span 
+                          key={idx} 
+                          onClick={() => {
+                            // Find and open related term if it exists in the list
+                            const relatedIndex = filteredTerms.findIndex(t => t.term === related);
+                            if (relatedIndex !== -1) {
+                              setOpenCardIndex(relatedIndex);
+                            }
+                          }}
+                          className="text-sm bg-primary/5 text-primary px-3 py-1.5 rounded-lg border border-primary/20 hover:bg-primary/10 transition-colors cursor-pointer"
+                        >
+                          {related}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            </div>
+          )}
 
           {filteredTerms.length === 0 && (
             <Card className="p-12 glass-morphism-strong border-primary/20 text-center">

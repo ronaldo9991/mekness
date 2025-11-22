@@ -11,18 +11,17 @@ import {
 } from "@/components/ui/select";
 import DataTable from "@/components/DataTable";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CreditCard, Bitcoin, DollarSign, CheckCircle2 } from "lucide-react";
 import type { Deposit as DepositType, TradingAccount } from "@shared/schema";
-import { loadStripe } from "@stripe/stripe-js";
-
-// Initialize Stripe
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
+import { useLocation } from "wouter";
+// Fatoorah payment integration
 
 export default function Deposit() {
+  const [location, setLocation] = useLocation();
   const [account, setAccount] = useState("");
   const [merchant, setMerchant] = useState("");
   const [amount, setAmount] = useState("");
@@ -42,69 +41,72 @@ export default function Deposit() {
     refetchInterval: 15000,
   });
 
-  // Handle Stripe Card Payment
-  const handleStripePayment = async () => {
-    try {
-      setProcessing(true);
-      const stripe = await stripePromise;
-      if (!stripe) {
-        throw new Error("Stripe failed to load");
-      }
+  // Handle callback from Fatoorah payment
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const success = urlParams.get("success");
+    const error = urlParams.get("error");
+    const depositId = urlParams.get("depositId");
+    const invoiceId = urlParams.get("paymentId");
 
-      const response = await apiRequest("POST", "/api/stripe/create-payment-intent", {
-        amount: parseFloat(amount),
-        tradingAccountId: account,
-        paymentMethod: "card",
-      });
-
+    if (success === "true" && depositId) {
       toast({
-        title: "Processing Payment",
-        description: "Please wait while we process your payment...",
+        title: "Payment Successful",
+        description: "Your payment is being processed. You'll be notified once approved.",
       });
-
-      // Redirect to Stripe Checkout or handle payment intent client-side
-      // For now, we'll show success
       queryClient.invalidateQueries({ queryKey: ["/api/deposits"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      
-      setAmount("");
-      setAccount("");
-      setMerchant("");
-
+      // Clean URL
+      setLocation("/dashboard/deposit");
+    } else if (error === "true") {
       toast({
-        title: "Payment Initiated",
-        description: "Your deposit is being processed. You'll be notified once approved.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to process payment",
+        title: "Payment Failed",
+        description: "Your payment could not be processed. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setProcessing(false);
+      // Clean URL
+      setLocation("/dashboard/deposit");
     }
-  };
 
-  // Handle Crypto Payment
-  const handleCryptoPayment = async () => {
+    // If invoiceId is present, check payment status
+    if (invoiceId) {
+      apiRequest("GET", `/api/fatoorah/payment-status/${invoiceId}`)
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ["/api/deposits"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+        })
+        .catch(() => {
+          // Silently fail - webhook will handle it
+        });
+    }
+  }, []);
+
+  // Handle Fatoorah Payment
+  const handleFatoorahPayment = async () => {
     try {
       setProcessing(true);
 
-      const response = await apiRequest("POST", "/api/stripe/create-crypto-payment", {
+      const response = await apiRequest("POST", "/api/fatoorah/create-invoice", {
         amount: parseFloat(amount),
         tradingAccountId: account,
-        cryptocurrency,
+        paymentMethod: merchant === "fatoorah-crypto" ? "crypto" : "card",
       });
 
-      if (response.url) {
-        // Redirect to Stripe Checkout for crypto
-        window.location.href = response.url;
+      if (response.invoiceURL) {
+        toast({
+          title: "Redirecting to Payment",
+          description: "You will be redirected to complete your payment...",
+        });
+        
+        // Redirect to Fatoorah payment page
+        window.location.href = response.invoiceURL;
+      } else {
+        throw new Error("Failed to get payment URL");
       }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to initiate crypto payment",
+        description: error.message || "Failed to initiate payment",
         variant: "destructive",
       });
       setProcessing(false);
@@ -123,10 +125,8 @@ export default function Deposit() {
       return;
     }
 
-    if (merchant === "stripe-card") {
-      await handleStripePayment();
-    } else if (merchant === "stripe-crypto") {
-      await handleCryptoPayment();
+    if (merchant === "fatoorah-card" || merchant === "fatoorah-crypto") {
+      await handleFatoorahPayment();
     } else {
       toast({
         title: "Error",
@@ -195,7 +195,7 @@ export default function Deposit() {
         <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
           Deposit Funds
         </h1>
-        <p className="text-muted-foreground">Add funds to your trading account securely with Stripe</p>
+        <p className="text-muted-foreground">Add funds to your trading account securely with Fatoorah</p>
       </div>
 
       {/* Deposit Form */}
@@ -239,16 +239,16 @@ export default function Deposit() {
                   <SelectValue placeholder="Select payment method" />
                 </SelectTrigger>
                 <SelectContent className="bg-black border-primary/30">
-                  <SelectItem value="stripe-card">
+                  <SelectItem value="fatoorah-card">
                     <div className="flex items-center gap-2">
                       <CreditCard className="w-4 h-4" />
-                      Credit/Debit Card (Stripe)
+                      Credit/Debit Card (Fatoorah)
                     </div>
                   </SelectItem>
-                  <SelectItem value="stripe-crypto">
+                  <SelectItem value="fatoorah-crypto">
                     <div className="flex items-center gap-2">
                       <Bitcoin className="w-4 h-4" />
-                      Cryptocurrency (Stripe)
+                      Cryptocurrency (Fatoorah)
                     </div>
                   </SelectItem>
                 </SelectContent>
@@ -256,7 +256,7 @@ export default function Deposit() {
             </div>
           </div>
 
-          {merchant === "stripe-crypto" && (
+          {merchant === "fatoorah-crypto" && (
             <div className="space-y-2">
               <Label htmlFor="crypto" className="text-primary uppercase tracking-wider text-xs font-bold">
                 Select Cryptocurrency
@@ -332,7 +332,7 @@ export default function Deposit() {
               <strong className="text-foreground">Instant Processing:</strong> Deposits are processed immediately after approval
             </div>
             <div>
-              <strong className="text-foreground">Secure Payment:</strong> Bank-grade encryption with Stripe
+              <strong className="text-foreground">Secure Payment:</strong> Bank-grade encryption with Fatoorah
             </div>
             <div>
               <strong className="text-foreground">Multiple Methods:</strong> Credit cards and cryptocurrency supported

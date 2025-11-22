@@ -62,19 +62,19 @@ export default function DepositBonus() {
       icon: DollarSign,
       title: "Increase Your Trading Capital",
       description: "Boost your account balance by up to 50% with our deposit bonus. More capital means more trading opportunities and larger position sizes.",
-      image: "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=800&q=80"
+      image: "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=600&q=75&auto=format&fit=crop"
     },
     {
       icon: TrendingUp,
       title: "Maximize Profit Potential",
       description: "With additional trading capital, you can diversify your portfolio, try new strategies, and potentially increase your returns.",
-      image: "https://images.unsplash.com/photo-1642790106117-e829e14a795f?w=800&q=80"
+      image: "https://images.unsplash.com/photo-1642790106117-e829e14a795f?w=600&q=75&auto=format&fit=crop"
     },
     {
       icon: Shield,
       title: "Risk-Free Exploration",
       description: "Use bonus funds to test advanced strategies without risking your own capital. Perfect for learning and improving your trading skills.",
-      image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80"
+      image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=75&auto=format&fit=crop"
     },
   ];
 
@@ -126,7 +126,7 @@ export default function DepositBonus() {
         <ParticleField count={90} className="opacity-40" />
         <div className="absolute inset-0 bg-gradient-to-br from-black via-background to-background"></div>
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=1920&q=80')] bg-cover bg-center opacity-10"></div>
+          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=800&q=75&auto=format&fit=crop')] bg-cover bg-center opacity-10"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent"></div>
         </div>
 

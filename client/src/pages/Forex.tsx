@@ -116,7 +116,7 @@ export default function Forex() {
       {/* Hero Section */}
       <div className="relative min-h-[80vh] flex items-center overflow-hidden pt-40 pb-20">
         <AnimatedGrid variant="cyber" />
-        <ParticleField count={60} className="opacity-30" />
+        <ParticleField count={25} className="opacity-30" />
         <div className="absolute inset-0 bg-gradient-to-br from-black via-background to-background"></div>
         <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-primary/5"></div>
         
@@ -480,8 +480,8 @@ export default function Forex() {
                 whileHover={{ scale: 1.1 }}
                 transition={{ type: "spring", stiffness: 300 }}
               >
-                <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl scale-150"></div>
-                <div className="relative w-24 h-24 bg-gradient-to-br from-primary/30 to-primary/10 rounded-full flex items-center justify-center border-2 border-primary/40 backdrop-blur-sm">
+                <div className="absolute inset-0 bg-primary/20 rounded-full blur-[16px] scale-150"></div>
+                <div className="relative w-24 h-24 bg-gradient-to-br from-primary/30 to-primary/10 rounded-full flex items-center justify-center border-2 border-primary/40 backdrop-blur-[8px]">
                   <CreditCard className="w-12 h-12 text-primary" />
                 </div>
               </motion.div>
@@ -504,8 +504,8 @@ export default function Forex() {
                 whileHover={{ scale: 1.1 }}
                 transition={{ type: "spring", stiffness: 300 }}
               >
-                <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl scale-150"></div>
-                <div className="relative w-24 h-24 bg-gradient-to-br from-primary/30 to-primary/10 rounded-full flex items-center justify-center border-2 border-primary/40 backdrop-blur-sm">
+                <div className="absolute inset-0 bg-primary/20 rounded-full blur-[16px] scale-150"></div>
+                <div className="relative w-24 h-24 bg-gradient-to-br from-primary/30 to-primary/10 rounded-full flex items-center justify-center border-2 border-primary/40 backdrop-blur-[8px]">
                   <Gift className="w-12 h-12 text-primary" />
                 </div>
               </motion.div>
@@ -528,8 +528,8 @@ export default function Forex() {
                 whileHover={{ scale: 1.1 }}
                 transition={{ type: "spring", stiffness: 300 }}
               >
-                <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl scale-150"></div>
-                <div className="relative w-24 h-24 bg-gradient-to-br from-primary/30 to-primary/10 rounded-full flex items-center justify-center border-2 border-primary/40 backdrop-blur-sm">
+                <div className="absolute inset-0 bg-primary/20 rounded-full blur-[16px] scale-150"></div>
+                <div className="relative w-24 h-24 bg-gradient-to-br from-primary/30 to-primary/10 rounded-full flex items-center justify-center border-2 border-primary/40 backdrop-blur-[8px]">
                   <Download className="w-12 h-12 text-primary" />
                 </div>
               </motion.div>

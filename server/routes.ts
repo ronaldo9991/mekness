@@ -2,24 +2,23 @@ import type { Express } from "express";
 import { storage } from "./storage";
 import { insertDepositSchema, insertWithdrawalSchema, insertDocumentSchema, insertTradingAccountSchema, insertUserSchema, insertAdminUserSchema, insertAdminCountryAssignmentSchema } from "@shared/schema";
 import bcrypt from "bcryptjs";
-import Stripe from "stripe";
 import { registerMT5Routes } from "./mt5-routes";
 import { mt5Service } from "./mt5-service";
 
-// Initialize Stripe (optional for development)
-let stripe: Stripe | null = null;
-try {
-  const stripeKey = process.env.STRIPE_SECRET_KEY;
-  if (stripeKey && stripeKey.startsWith('sk_')) {
-    stripe = new Stripe(stripeKey, {
-      apiVersion: "2024-11-20.acacia",
-    });
-    console.log("✓ Stripe initialized successfully");
-  } else {
-    console.warn("⚠ Stripe not configured - payment features will be disabled");
-  }
-} catch (error) {
-  console.warn("⚠ Stripe initialization failed:", error);
+// Fatoorah API Configuration
+const FATOORAH_API_KEY = process.env.FATOORAH_API_KEY || "";
+const FATOORAH_BASE_URL = process.env.FATOORAH_BASE_URL || "https://apitest.myfatoorah.com"; // Use https://api.myfatoorah.com for production
+
+// Initialize Fatoorah API client
+const fatoorahHeaders = {
+  "Content-Type": "application/json",
+  "Authorization": `Bearer ${FATOORAH_API_KEY}`,
+};
+
+if (FATOORAH_API_KEY) {
+  console.log("✓ Fatoorah initialized successfully");
+} else {
+  console.warn("⚠ Fatoorah not configured - payment features will be disabled");
 }
 
 // Extend express-session types
@@ -328,8 +327,8 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Stripe Payment Intent - Create deposit with Stripe
-  app.post("/api/stripe/create-payment-intent", async (req, res) => {
+  // Fatoorah - Create payment invoice
+  app.post("/api/fatoorah/create-invoice", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId) {
@@ -342,298 +341,244 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(400).json({ message: "Minimum deposit is $10" });
       }
 
-      // Create Stripe Payment Intent
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(amount * 100), // Stripe uses cents
-        currency: "usd",
-        payment_method_types: paymentMethod === "crypto" ? ["card"] : ["card"],
-        metadata: {
-          userId,
-          tradingAccountId: tradingAccountId || "",
-          depositType: paymentMethod || "card",
-        },
-      });
+      if (!FATOORAH_API_KEY) {
+        return res.status(500).json({ message: "Fatoorah is not configured" });
+      }
 
-      // Create deposit record
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Create deposit record first
       const deposit = await storage.createDeposit({
         userId,
         accountId: tradingAccountId,
-        merchant: paymentMethod === "crypto" ? "Cryptocurrency" : "Stripe",
+        merchant: paymentMethod === "crypto" ? "Fatoorah Crypto" : "Fatoorah",
         amount: amount.toString(),
         status: "Pending",
-        transactionId: paymentIntent.id,
+        transactionId: "", // Will be updated after invoice creation
       });
 
-      // Store Stripe payment in database
+      // Create Fatoorah invoice
+      const invoiceData = {
+        InvoiceAmount: amount,
+        CurrencyIso: "USD",
+        CustomerName: user.fullName || user.username || user.email,
+        CustomerEmail: user.email,
+        CustomerMobile: user.phone || "",
+        CallBackUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/dashboard/deposit?success=true&depositId=${deposit.id}`,
+        ErrorUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/dashboard/deposit?error=true&depositId=${deposit.id}`,
+        Language: "en",
+        DisplayCurrencyIso: "USD",
+        InvoiceItems: [
+          {
+            ItemName: "Trading Account Deposit",
+            Quantity: 1,
+            UnitPrice: amount,
+          },
+        ],
+        CustomerReference: deposit.id,
+        CustomerAddress: {
+          AddressLine: user.address || "",
+          City: user.city || "",
+          Country: user.country || "",
+        },
+      };
+
+      const fatoorahResponse = await fetch(`${FATOORAH_BASE_URL}/v2/SendPayment`, {
+        method: "POST",
+        headers: fatoorahHeaders,
+        body: JSON.stringify(invoiceData),
+      });
+
+      if (!fatoorahResponse.ok) {
+        const errorData = await fatoorahResponse.json();
+        console.error("Fatoorah invoice creation error:", errorData);
+        await storage.updateDepositStatus(deposit.id, "Rejected");
+        return res.status(500).json({ 
+          message: errorData.Message || "Failed to create payment invoice" 
+        });
+      }
+
+      const fatoorahData = await fatoorahResponse.json();
+      
+      if (fatoorahData.IsSuccess === false) {
+        console.error("Fatoorah error:", fatoorahData);
+        await storage.updateDepositStatus(deposit.id, "Rejected");
+        return res.status(500).json({ 
+          message: fatoorahData.Message || "Failed to create payment invoice" 
+        });
+      }
+
+      // Update deposit with invoice ID
+      const invoiceId = fatoorahData.Data.InvoiceId;
+      const invoiceURL = fatoorahData.Data.InvoiceURL;
+      
+      await storage.updateDeposit(deposit.id, {
+        transactionId: invoiceId.toString(),
+      });
+
+      // Store Fatoorah payment in database (reusing stripe_payments table structure)
       await storage.createStripePayment({
         userId,
         depositId: deposit.id,
-        paymentIntentId: paymentIntent.id,
+        stripePaymentIntentId: invoiceId.toString(),
         amount: amount.toString(),
-        currency: "usd",
-        status: paymentIntent.status,
+        currency: "USD",
+        status: "pending",
+        metadata: JSON.stringify({
+          invoiceId,
+          paymentMethod,
+          tradingAccountId,
+        }),
       });
 
       res.json({
-        clientSecret: paymentIntent.client_secret,
+        invoiceId,
+        invoiceURL,
         depositId: deposit.id,
       });
     } catch (error: any) {
-      console.error("Stripe payment intent error:", error);
-      res.status(500).json({ message: error.message || "Failed to create payment intent" });
+      console.error("Fatoorah invoice creation error:", error);
+      res.status(500).json({ message: error.message || "Failed to create payment invoice" });
     }
   });
 
-  // Stripe Crypto Payment Intent
-  app.post("/api/stripe/create-crypto-payment", async (req, res) => {
+  // Fatoorah Webhook - Handle payment confirmations
+  app.post("/api/fatoorah/webhook", async (req, res) => {
     try {
-      const userId = getCurrentUserId(req);
-      if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+      const { InvoiceId, InvoiceStatus, InvoiceValue, CustomerReference } = req.body;
+
+      if (!InvoiceId) {
+        return res.status(400).json({ message: "Missing InvoiceId" });
       }
 
-      const { amount, tradingAccountId, cryptocurrency } = req.body;
-
-      if (!amount || amount < 10) {
-        return res.status(400).json({ message: "Minimum deposit is $10" });
+      // Find deposit by invoice ID
+      const fatoorahPayment = await storage.getStripePaymentByIntentId(InvoiceId.toString());
+      if (!fatoorahPayment) {
+        console.warn(`Fatoorah webhook: Payment not found for invoice ${InvoiceId}`);
+        return res.status(404).json({ message: "Payment not found" });
       }
 
-      // Create Stripe Checkout Session for crypto
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ["card"], // Stripe crypto is handled via checkout
-        line_items: [
-          {
-            price_data: {
-              currency: "usd",
-              product_data: {
-                name: "Trading Account Deposit",
-                description: `Deposit to trading account via ${cryptocurrency || "cryptocurrency"}`,
-              },
-              unit_amount: Math.round(amount * 100),
-            },
-            quantity: 1,
-          },
-        ],
-        mode: "payment",
-        success_url: `${process.env.FRONTEND_URL || "http://localhost:5000"}/dashboard/deposit?success=true&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.FRONTEND_URL || "http://localhost:5000"}/dashboard/deposit?canceled=true`,
-        metadata: {
-          userId,
-          tradingAccountId: tradingAccountId || "",
-          depositType: "crypto",
-          cryptocurrency: cryptocurrency || "BTC",
-        },
-      });
+      const deposit = await storage.getDeposit(fatoorahPayment.depositId);
+      if (!deposit) {
+        return res.status(404).json({ message: "Deposit not found" });
+      }
 
-      // Create deposit record
-      const deposit = await storage.createDeposit({
-        userId,
-        accountId: tradingAccountId,
-        merchant: `Stripe Crypto (${cryptocurrency || "BTC"})`,
-        amount: amount.toString(),
-        status: "Pending",
-        transactionId: session.id,
-      });
-
-      res.json({
-        sessionId: session.id,
-        url: session.url,
-        depositId: deposit.id,
-      });
-    } catch (error: any) {
-      console.error("Stripe crypto payment error:", error);
-      res.status(500).json({ message: error.message || "Failed to create crypto payment" });
-    }
-  });
-
-  // Stripe Webhook - Handle payment confirmations
-  app.post("/api/stripe/webhook", async (req, res) => {
-    const sig = req.headers["stripe-signature"];
-    let event: Stripe.Event;
-
-    try {
-      event = stripe.webhooks.constructEvent(
-        req.body,
-        sig!,
-        process.env.STRIPE_WEBHOOK_SECRET || ""
-      );
-    } catch (err: any) {
-      console.error("Webhook signature verification failed:", err.message);
-      return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-
-    // Handle the event
-    switch (event.type) {
-      case "payment_intent.succeeded":
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        const { userId, tradingAccountId } = paymentIntent.metadata;
-
+      // Handle payment status
+      if (InvoiceStatus === "Paid") {
         // Update deposit status
-        const stripePayment = await storage.getStripePaymentByIntentId(paymentIntent.id);
-        if (stripePayment) {
-          await storage.updateDepositStatus(stripePayment.depositId, "Approved");
-          await storage.updateStripePaymentStatus(stripePayment.id, "succeeded");
+        await storage.updateDepositStatus(fatoorahPayment.depositId, "Approved");
+        await storage.updateStripePaymentStatus(fatoorahPayment.id, "succeeded");
 
-          // Add amount to trading account
-          if (tradingAccountId) {
-            const account = await storage.getTradingAccount(tradingAccountId);
-            if (account) {
-              const depositAmount = paymentIntent.amount / 100;
-              const newBalance = (parseFloat(account.balance) + depositAmount).toString();
-              await storage.updateTradingAccount(tradingAccountId, { balance: newBalance });
+        // Get metadata to find trading account
+        const metadata = fatoorahPayment.metadata ? JSON.parse(fatoorahPayment.metadata) : {};
+        const tradingAccountId = metadata.tradingAccountId || deposit.accountId;
 
-              // Sync with MT5 if enabled
-              if (process.env.MT5_ENABLED === "true" && account.type === "Live") {
-                try {
-                  await mt5Service.updateBalance(
-                    account.accountId,
-                    depositAmount,
-                    `Stripe deposit: ${paymentIntent.id}`
-                  );
-                  console.log(`MT5 balance updated for account ${account.accountId}: +$${depositAmount}`);
-                } catch (mt5Error) {
-                  console.error("Failed to sync deposit with MT5:", mt5Error);
-                  // Continue even if MT5 sync fails - local balance is updated
-                }
+        // Add amount to trading account
+        if (tradingAccountId) {
+          const account = await storage.getTradingAccount(tradingAccountId);
+          if (account) {
+            const depositAmount = parseFloat(InvoiceValue || deposit.amount);
+            const newBalance = (parseFloat(account.balance) + depositAmount).toString();
+            await storage.updateTradingAccount(tradingAccountId, { balance: newBalance });
+
+            // Sync with MT5 if enabled
+            if (process.env.MT5_ENABLED === "true" && account.type === "Live") {
+              try {
+                await mt5Service.updateBalance(
+                  account.accountId,
+                  depositAmount,
+                  `Fatoorah deposit: ${InvoiceId}`
+                );
+                console.log(`MT5 balance updated for account ${account.accountId}: +$${depositAmount}`);
+              } catch (mt5Error) {
+                console.error("Failed to sync deposit with MT5:", mt5Error);
+                // Continue even if MT5 sync fails - local balance is updated
               }
+            }
 
-              // Credit commission to IB wallet if user was referred
-              const deposit = await storage.getDeposit(stripePayment.depositId);
-              if (deposit) {
-                const user = await storage.getUser(deposit.userId);
-                if (user && user.referredBy) {
-                  try {
-                    const ibWallets = await storage.getIBCBWallets(user.referredBy);
-                    let ibWallet = ibWallets.find(w => w.walletType === "IB");
-                    
-                    if (!ibWallet) {
-                      ibWallet = await storage.createIBCBWallet({
-                        userId: user.referredBy,
-                        walletType: "IB",
-                        balance: "0",
-                        currency: "USD",
-                        commissionRate: "5.0",
-                        totalCommission: "0",
-                        enabled: true,
-                      });
-                    }
-
-                    const commissionRate = parseFloat(ibWallet.commissionRate || "5.0");
-                    const commission = depositAmount * (commissionRate / 100);
-                    const newBalance = (parseFloat(ibWallet.balance || "0") + commission).toString();
-                    const newTotalCommission = (parseFloat(ibWallet.totalCommission || "0") + commission).toString();
-                    
-                    await storage.updateIBCBWallet(ibWallet.id, {
-                      balance: newBalance,
-                      totalCommission: newTotalCommission,
-                      updatedAt: new Date(),
-                    });
-
-                    await storage.createNotification({
-                      userId: user.referredBy,
-                      title: "Commission Earned",
-                      message: `You earned $${commission.toFixed(2)} commission from ${user.fullName || user.email}'s deposit.`,
-                      type: "success",
-                    });
-                  } catch (error) {
-                    console.error("Failed to credit IB commission:", error);
-                  }
+            // Credit commission to IB wallet if user was referred and referral is accepted
+            const user = await storage.getUser(deposit.userId);
+            if (user && user.referredBy && user.referralStatus === "Accepted") {
+              try {
+                const ibWallets = await storage.getIBCBWallets(user.referredBy);
+                let ibWallet = ibWallets.find(w => w.walletType === "IB");
+                
+                if (!ibWallet) {
+                  ibWallet = await storage.createIBCBWallet({
+                    userId: user.referredBy,
+                    walletType: "IB",
+                    balance: "0",
+                    currency: "USD",
+                    commissionRate: "5.0",
+                    totalCommission: "0",
+                    enabled: true,
+                  });
                 }
+
+                const commissionRate = parseFloat(ibWallet.commissionRate || "5.0");
+                const commission = depositAmount * (commissionRate / 100);
+                const newBalance = (parseFloat(ibWallet.balance || "0") + commission).toString();
+                const newTotalCommission = (parseFloat(ibWallet.totalCommission || "0") + commission).toString();
+                
+                await storage.updateIBCBWallet(ibWallet.id, {
+                  balance: newBalance,
+                  totalCommission: newTotalCommission,
+                  updatedAt: new Date(),
+                });
+
+                await storage.createNotification({
+                  userId: user.referredBy,
+                  title: "Commission Earned",
+                  message: `You earned $${commission.toFixed(2)} commission from ${user.fullName || user.email}'s deposit.`,
+                  type: "success",
+                });
+              } catch (error) {
+                console.error("Failed to credit IB commission:", error);
               }
             }
           }
         }
-        break;
+      } else if (InvoiceStatus === "Failed" || InvoiceStatus === "Canceled") {
+        await storage.updateDepositStatus(fatoorahPayment.depositId, "Rejected");
+        await storage.updateStripePaymentStatus(fatoorahPayment.id, "failed");
+      }
 
-      case "payment_intent.payment_failed":
-        const failedPayment = event.data.object as Stripe.PaymentIntent;
-        const failedStripePayment = await storage.getStripePaymentByIntentId(failedPayment.id);
-        if (failedStripePayment) {
-          await storage.updateDepositStatus(failedStripePayment.depositId, "Rejected");
-          await storage.updateStripePaymentStatus(failedStripePayment.id, "failed");
-        }
-        break;
-
-      case "checkout.session.completed":
-        const session = event.data.object as Stripe.Checkout.Session;
-        const sessionMetadata = session.metadata;
-        if (sessionMetadata) {
-          // Find deposit by session ID
-          const deposit = await storage.getDepositByTransactionId(session.id);
-          if (deposit) {
-            await storage.updateDepositStatus(deposit.id, "Approved");
-            
-            // Add amount to trading account
-            if (sessionMetadata.tradingAccountId) {
-              const account = await storage.getTradingAccount(sessionMetadata.tradingAccountId);
-              if (account) {
-                const depositAmount = session.amount_total! / 100;
-                const newBalance = (parseFloat(account.balance || "0") + depositAmount).toString();
-                await storage.updateTradingAccount(sessionMetadata.tradingAccountId, { balance: newBalance });
-
-                // Sync with MT5 if enabled
-                if (process.env.MT5_ENABLED === "true" && account.type === "Live") {
-                  try {
-                    await mt5Service.updateBalance(
-                      account.accountId,
-                      depositAmount,
-                      `Stripe checkout deposit: ${session.id}`
-                    );
-                    console.log(`MT5 balance updated for account ${account.accountId}: +$${depositAmount}`);
-                  } catch (mt5Error) {
-                    console.error("Failed to sync deposit with MT5:", mt5Error);
-                    // Continue even if MT5 sync fails - local balance is updated
-                  }
-                }
-
-                // Credit commission to IB wallet if user was referred
-                const user = await storage.getUser(deposit.userId);
-                if (user && user.referredBy) {
-                  try {
-                    const ibWallets = await storage.getIBCBWallets(user.referredBy);
-                    let ibWallet = ibWallets.find(w => w.walletType === "IB");
-                    
-                    if (!ibWallet) {
-                      ibWallet = await storage.createIBCBWallet({
-                        userId: user.referredBy,
-                        walletType: "IB",
-                        balance: "0",
-                        currency: "USD",
-                        commissionRate: "5.0",
-                        totalCommission: "0",
-                        enabled: true,
-                      });
-                    }
-
-                    const commissionRate = parseFloat(ibWallet.commissionRate || "5.0");
-                    const commission = depositAmount * (commissionRate / 100);
-                    const newBalance = (parseFloat(ibWallet.balance || "0") + commission).toString();
-                    const newTotalCommission = (parseFloat(ibWallet.totalCommission || "0") + commission).toString();
-                    
-                    await storage.updateIBCBWallet(ibWallet.id, {
-                      balance: newBalance,
-                      totalCommission: newTotalCommission,
-                      updatedAt: new Date(),
-                    });
-
-                    await storage.createNotification({
-                      userId: user.referredBy,
-                      title: "Commission Earned",
-                      message: `You earned $${commission.toFixed(2)} commission from ${user.fullName || user.email}'s deposit.`,
-                      type: "success",
-                    });
-                  } catch (error) {
-                    console.error("Failed to credit IB commission:", error);
-                  }
-                }
-              }
-            }
-          }
-        }
-        break;
+      res.json({ received: true });
+    } catch (error: any) {
+      console.error("Fatoorah webhook error:", error);
+      res.status(500).json({ message: error.message || "Webhook processing failed" });
     }
+  });
 
-    res.json({ received: true });
+  // Fatoorah - Check payment status (for callback URL)
+  app.get("/api/fatoorah/payment-status/:invoiceId", async (req, res) => {
+    try {
+      const { invoiceId } = req.params;
+
+      if (!FATOORAH_API_KEY) {
+        return res.status(500).json({ message: "Fatoorah is not configured" });
+      }
+
+      // Get payment status from Fatoorah
+      const response = await fetch(`${FATOORAH_BASE_URL}/v2/GetPaymentStatus`, {
+        method: "POST",
+        headers: fatoorahHeaders,
+        body: JSON.stringify({ Key: invoiceId, KeyType: "InvoiceId" }),
+      });
+
+      if (!response.ok) {
+        return res.status(500).json({ message: "Failed to get payment status" });
+      }
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error: any) {
+      console.error("Fatoorah payment status error:", error);
+      res.status(500).json({ message: error.message || "Failed to get payment status" });
+    }
   });
 
   // Deposits
@@ -1108,6 +1053,13 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(400).json({ message: "User was not referred by anyone" });
       }
 
+      // Ensure referral is in Pending status (can only accept after signup)
+      if (user.referralStatus !== "Pending") {
+        return res.status(400).json({ 
+          message: `Referral cannot be accepted. Current status: ${user.referralStatus || "Not set"}. Only pending referrals can be accepted.` 
+        });
+      }
+
       // Update referral status
       const updated = await storage.updateUser(userId, {
         referralStatus: "Accepted",
@@ -1185,6 +1137,121 @@ export async function registerRoutes(app: Express): Promise<void> {
     } catch (error) {
       console.error("Failed to reject referral:", error);
       res.status(500).json({ message: "Failed to reject referral" });
+    }
+  });
+
+  // Admin - Update IB Commission Rate
+  app.patch("/api/admin/referrals/:id/commission-rate", async (req, res) => {
+    try {
+      const canProceed = await requireAdmin(req, res);
+      if (!canProceed) return;
+
+      const adminId = getCurrentAdminId(req);
+      const userId = req.params.id; // This is the referrer's user ID (IB broker)
+      const { commissionRate } = req.body;
+
+      if (!commissionRate || isNaN(parseFloat(commissionRate)) || parseFloat(commissionRate) < 0 || parseFloat(commissionRate) > 100) {
+        return res.status(400).json({ message: "Invalid commission rate. Must be between 0 and 100." });
+      }
+
+      // Get the IB wallet for this user
+      const ibWallets = await storage.getIBCBWallets(userId);
+      const ibWallet = ibWallets.find(w => w.walletType === "IB");
+
+      if (!ibWallet) {
+        return res.status(404).json({ message: "IB wallet not found for this user" });
+      }
+
+      // Update commission rate
+      await storage.updateIBCBWallet(ibWallet.id, {
+        commissionRate: parseFloat(commissionRate).toFixed(2),
+        updatedAt: new Date(),
+      });
+
+      // Log activity
+      const user = await storage.getUser(userId);
+      await logActivity(
+        adminId!,
+        "UPDATE_COMMISSION_RATE",
+        "ib_wallet",
+        ibWallet.id,
+        `Updated commission rate to ${commissionRate}% for IB broker ${user?.email || userId}`
+      );
+
+      const updatedWallet = await storage.getIBCBWallet(ibWallet.id);
+      res.json(updatedWallet);
+    } catch (error) {
+      console.error("Failed to update commission rate:", error);
+      res.status(500).json({ message: "Failed to update commission rate" });
+    }
+  });
+
+  // Admin - Send money from IB wallet to broker (IB Payout)
+  app.post("/api/admin/referrals/:id/payout", async (req, res) => {
+    try {
+      const canProceed = await requireAdmin(req, res);
+      if (!canProceed) return;
+
+      const adminId = getCurrentAdminId(req);
+      const userId = req.params.id; // This is the referrer's user ID (IB broker)
+      const { amount, notes } = req.body;
+
+      if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+        return res.status(400).json({ message: "Invalid amount. Must be greater than 0." });
+      }
+
+      const payoutAmount = parseFloat(amount);
+
+      // Get the IB wallet for this user
+      const ibWallets = await storage.getIBCBWallets(userId);
+      const ibWallet = ibWallets.find(w => w.walletType === "IB");
+
+      if (!ibWallet) {
+        return res.status(404).json({ message: "IB wallet not found for this user" });
+      }
+
+      const currentBalance = parseFloat(ibWallet.balance || "0");
+      if (currentBalance < payoutAmount) {
+        return res.status(400).json({ 
+          message: `Insufficient balance. Available: $${currentBalance.toFixed(2)}, Requested: $${payoutAmount.toFixed(2)}` 
+        });
+      }
+
+      // Deduct amount from IB wallet
+      const newBalance = (currentBalance - payoutAmount).toString();
+      await storage.updateIBCBWallet(ibWallet.id, {
+        balance: newBalance,
+        updatedAt: new Date(),
+      });
+
+      // Log activity
+      const user = await storage.getUser(userId);
+      await logActivity(
+        adminId!,
+        "IB_PAYOUT",
+        "ib_wallet",
+        ibWallet.id,
+        `Sent $${payoutAmount.toFixed(2)} payout to IB broker ${user?.email || userId}. ${notes || ""}`
+      );
+
+      // Create notification for IB broker
+      await storage.createNotification({
+        userId,
+        title: "IB Payout Processed",
+        message: `Your payout of $${payoutAmount.toFixed(2)} has been processed and sent to your broker account.`,
+        type: "success",
+      });
+
+      const updatedWallet = await storage.getIBCBWallet(ibWallet.id);
+      res.json({
+        success: true,
+        message: `Successfully sent $${payoutAmount.toFixed(2)} to IB broker`,
+        wallet: updatedWallet,
+        payoutAmount: payoutAmount.toFixed(2),
+      });
+    } catch (error) {
+      console.error("Failed to process IB payout:", error);
+      res.status(500).json({ message: "Failed to process IB payout" });
     }
   });
 
@@ -1660,9 +1727,9 @@ export async function registerRoutes(app: Express): Promise<void> {
         }
       }
 
-      // Credit commission to IB wallet if user was referred
+      // Credit commission to IB wallet if user was referred and referral is accepted
       const user = await storage.getUser(deposit.userId);
-      if (user && user.referredBy) {
+      if (user && user.referredBy && user.referralStatus === "Accepted") {
         try {
           const ibWallets = await storage.getIBCBWallets(user.referredBy);
           let ibWallet = ibWallets.find(w => w.walletType === "IB");

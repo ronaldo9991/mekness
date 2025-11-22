@@ -16,7 +16,8 @@ interface ParticleFieldProps {
 }
 
 // Optimized ParticleField with GPU acceleration and reduced overhead
-function ParticleField({ count = 50, className = "" }: ParticleFieldProps) {
+// Performance: Max 30 particles for optimal performance
+function ParticleField({ count = 30, className = "" }: ParticleFieldProps) {
   const [isVisible, setIsVisible] = useState(true);
 
   // Pause animations when tab is not visible (major performance boost)
@@ -29,6 +30,9 @@ function ParticleField({ count = 50, className = "" }: ParticleFieldProps) {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
+  // Cap particle count at 30 for performance
+  const optimizedCount = useMemo(() => Math.min(count, 30), [count]);
+
   const particles = useMemo(() => {
     const colors = [
       "rgba(212, 175, 55, 0.6)",
@@ -36,7 +40,7 @@ function ParticleField({ count = 50, className = "" }: ParticleFieldProps) {
       "rgba(212, 175, 55, 0.4)",
     ];
 
-    return Array.from({ length: count }, (_, i) => ({
+    return Array.from({ length: optimizedCount }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
@@ -45,7 +49,7 @@ function ParticleField({ count = 50, className = "" }: ParticleFieldProps) {
       delay: Math.random() * 5,
       color: colors[Math.floor(Math.random() * colors.length)],
     })) as Particle[];
-  }, [count]);
+  }, [optimizedCount]);
 
   // Only render connection lines for first 10 particles to reduce overhead
   const connectionLines = useMemo(() => {
